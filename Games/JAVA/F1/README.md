@@ -1,4 +1,4 @@
-# 🏎️ F1 — Jeu de Course en Java
+# 🏎️ F1 — Jeu de Course
 
 Un jeu de course développé en Java avec une architecture **MVC**, une interface graphique **Swing**, et un système d'événements observateur.
 
