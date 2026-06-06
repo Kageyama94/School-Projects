@@ -83,3 +83,6 @@ Ou via votre IDE (IntelliJ, Eclipse, VS Code + Extension Pack for Java) en lanç
 4. Un clic sur une case valide joue le coup ; les pièces retournées s'animent.
 5. Si un joueur n'a aucun coup, il passe automatiquement son tour.
 6. En fin de partie, le score final et le vainqueur sont affichés.
+
+![Sélection du mode](assets/menu.png)
+![Plateau](assets/gameplay.png)
