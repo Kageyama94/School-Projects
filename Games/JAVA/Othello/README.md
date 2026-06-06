@@ -2,6 +2,9 @@
 
 Un jeu d'Othello (Reversi) entièrement jouable, développé en Java avec une architecture **MVC** (Modèle-Vue-Contrôleur) et une interface graphique Swing.
 
+![Sélection du mode](assets/menu.png)
+![Plateau](assets/gameplay.png)
+
 ---
 
 ## Fonctionnalités
@@ -72,14 +75,3 @@ java -cp out app.Main
 ```
 
 Ou via votre IDE (IntelliJ, Eclipse, VS Code + Extension Pack for Java) en lançant `Main.java`.
-
----
-
-## Aperçu du déroulement d'une partie
-
-1. Au lancement, une boîte de dialogue propose le mode de jeu.
-2. Le plateau 8×8 s'affiche avec les pièces initiales.
-3. Les coups valides du joueur actif sont indiqués par des points semi-transparents.
-4. Un clic sur une case valide joue le coup ; les pièces retournées s'animent.
-5. Si un joueur n'a aucun coup, il passe automatiquement son tour.
-6. En fin de partie, le score final et le vainqueur sont affichés.

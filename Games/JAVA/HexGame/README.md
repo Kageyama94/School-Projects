@@ -11,6 +11,8 @@ Le Hex se joue sur un plateau de 11×11 cases hexagonales entre deux joueurs :
 
 Les joueurs placent chacun leur tour un pion sur une case vide. Le premier à créer un chemin continu entre ses deux bords gagne.
 
+![Plateau](assets/gameplay.png)
+
 ## Lancer le jeu
 
 ```bash

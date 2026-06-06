@@ -10,6 +10,13 @@ Deux joueurs (ou une IA) se déplacent sur une grille et laissent une trace derr
 
 ---
 
+## Aperçu
+
+![Sélection du mode](assets/menu.png)
+![Partie en cours](assets/gameplay.png)
+
+---
+
 ## 🎮 Modes de jeu
 
 | Mode | Description |
