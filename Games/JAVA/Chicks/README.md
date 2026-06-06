@@ -47,7 +47,6 @@ Des poussins apparaissent un par un depuis un portail d'entrée et marchent tout
 src/
 ├── app/
 │   └── Main.java                  # Point d'entrée, initialisation Swing
-│
 ├── model/
 │   ├── GameState.java             # Snapshot immuable de l'état du jeu
 │   ├── SelectionModel.java        # Tâche sélectionnée par le joueur
@@ -74,11 +73,9 @@ src/
 │   └── environment/
 │       ├── Obstacle.java          # Grille de cellules (mur, blocker, lave)
 │       └── Portal.java            # Portails d'entrée et de sortie
-│
 ├── view/
 │   ├── GameView.java              # Composant Swing principal
 │   └── Renderer.java             # Logique de rendu (environnement, persos, stats)
-│
 └── controller/
     ├── GameController.java        # Boucle de jeu, timers, logique de fin
     ├── TaskController.java        # Application des tâches sur les personnages
