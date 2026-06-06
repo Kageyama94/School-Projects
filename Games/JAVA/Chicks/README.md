@@ -9,6 +9,8 @@
 **ChickApp** est un jeu de réflexion inspiré de *Lemmings*, développé en Java avec Swing.  
 Des poussins apparaissent un par un depuis un portail d'entrée et marchent tout droit, sans se soucier du danger. Votre rôle : leur assigner des tâches pour les guider jusqu'au portail de sortie, en évitant la lave et les chutes mortelles.
 
+![Aperçu du jeu](assets/presentation.png)
+
 ---
 
 ## Aperçu du gameplay
