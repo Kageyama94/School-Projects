@@ -1,4 +1,4 @@
-# 🐥 ChickApp
+# 🐥 Chicks
 
 > Clone de *Lemmings* en Java — sauvez vos poussins !
 

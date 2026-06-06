@@ -1,4 +1,4 @@
-# ♟ Othello MVC — Java Swing
+# ♟ Othello
 
 Un jeu d'Othello (Reversi) entièrement jouable, développé en Java avec une architecture **MVC** (Modèle-Vue-Contrôleur) et une interface graphique Swing.
 
