@@ -1,0 +1,16 @@
+# Compilation Java
+bin/
+out/
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
