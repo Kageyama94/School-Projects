@@ -2,7 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 
-public class HexGame extends JPanel {
+public class Main extends JPanel {
     private static final int N = 11;
     private static final int SIZE = 30;
 
@@ -12,7 +12,7 @@ public class HexGame extends JPanel {
     private boolean gameOver = false;
     private JLabel statusLabel;
 
-    public HexGame(JLabel statusLabel) {
+    public Main(JLabel statusLabel) {
         this.statusLabel = statusLabel;
         setBackground(new Color(50, 50, 50));
         updateStatusLabel();
@@ -201,7 +201,7 @@ public class HexGame extends JPanel {
         statusLabel.setOpaque(true);
         statusLabel.setForeground(Color.BLACK);
 
-        HexGame gamePanel = new HexGame(statusLabel);
+        Main gamePanel = new Main(statusLabel);
 
         frame.add(gamePanel, BorderLayout.CENTER);
         frame.add(statusLabel, BorderLayout.SOUTH);
