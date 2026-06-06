@@ -2,8 +2,8 @@
 
 Un jeu d'Othello (Reversi) entièrement jouable, développé en Java avec une architecture **MVC** (Modèle-Vue-Contrôleur) et une interface graphique Swing.
 
-![Sélection du mode](assets/menu.png)
-![Plateau](assets/gameplay.png)
+![Sélection du mode](screenshots/menu.png)
+![Plateau](screenshots/gameplay.png)
 
 ---
 
