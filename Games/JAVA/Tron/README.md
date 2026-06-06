@@ -1,4 +1,4 @@
-# 🏍️ Tron –
+# 🏍️ Tron
 
 Implémentation du jeu **Tron** en Java avec interface graphique Swing, suivant le pattern **MVC** (Modèle-Vue-Contrôleur).
 
