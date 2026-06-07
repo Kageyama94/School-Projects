@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Environnements virtuels
+venv/
+.venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Données (ne pas versionner les CSV bruts)
+data/vins.csv
+data/vins_clean.csv
+
+# Figures générées
+figures/vis_*.png
+figures/correlation.png
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
