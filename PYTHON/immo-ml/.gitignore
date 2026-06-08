@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Environnements virtuels
+venv/
+.venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*~
+
+# Données (ne pas versionner les CSV bruts)
+data/annonces.csv
+
+# Figures générées
+figures/*.png
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
