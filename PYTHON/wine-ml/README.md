@@ -1,6 +1,6 @@
 # Estimation du prix d'un vin par apprentissage automatique
 
-Projet de Semestre 6 — Étude de l'impact des notes de critiques et de l'appellation sur le prix d'un vin de Bordeaux, à partir des données du site [Millesima](https://www.millesima.fr/).
+Étude de l'impact des notes de critiques et de l'appellation sur le prix d'un vin de Bordeaux, à partir des données du site [Millesima](https://www.millesima.fr/).
 
 ---
 
