@@ -1,0 +1,336 @@
+## Exercice 1 : le montant des charges
+
+Références : Arrêté du 27 septembre 2019, articles 9 et 16 2°
+Art. D. 823-16 3° et D. 823-18 du CCH
+
+### Déclaration des structures de données et des champs d'application
+
+```catala
+déclaration champ d'application CalculMontantForfaitaireCharges:
+  entrée nombre_personnes_à_charge contenu entier
+  entrée colocation contenu booléen
+  entrée situation_familiale contenu SituationFamiliale
+  résultat montant_forfaitaire_charges_d823_16 contenu argent
+
+déclaration énumération SituationFamiliale:
+  -- PersonneSeule
+  -- Couple
+```
+
+### Question 1 : Compléter le code (articles 9 et 16)
+
+Compléter le code Catala pour implémenter l'ensemble des règles
+des articles 9 et 16.
+
+#### Arrêté du 27 septembre 2019 - Article 9
+
+Hors colocation. Montants forfaitaires au titre des charges
+(art. D. 823-16 3°) :
+
+- Bénéficiaire isolé ou couple sans personne à charge : 58,08 €
+- Par personne supplémentaire à charge : 13,17 €
+
+```catala
+champ d'application CalculMontantForfaitaireCharges:
+  étiquette article9
+  définition montant_forfaitaire_charges_d823_16 sous condition
+    non colocation
+  conséquence égal à
+    58,08€ + (13,17€ * nombre_personnes_à_charge)
+```
+
+#### Arrêté du 27 septembre 2019 - Article 16 2°
+
+En colocation (art. D. 823-18). Montants forfaitaires au titre des charges :
+
+- Bénéficiaire isolé : 29,03 €
+- Couple sans personne à charge : 58,08 €
+- Majoration par personne à charge : 13,17 €
+
+```catala
+champ d'application CalculMontantForfaitaireCharges:
+  exception article9
+  définition montant_forfaitaire_charges_d823_16 sous condition
+    colocation
+  conséquence égal à
+    selon situation_familiale sous forme
+    -- PersonneSeule :
+      29,03€ + (13,17€ * nombre_personnes_à_charge)
+    -- Couple :
+      58,08€ + (13,17€ * nombre_personnes_à_charge)
+```
+
+### Question 2 : Vérifier → personne seule, 0 enfant, colocation = 29,03 €
+
+Vérifier que l'implémentation retourne 29,03 € pour une personne
+seule sans enfant en colocation. (Art. 16 2° — bénéficiaire isolé)
+
+```catala
+déclaration champ d'application Test11:
+  résultat calcul contenu CalculMontantForfaitaireCharges
+
+champ d'application Test11:
+  définition calcul égal à
+    résultat de CalculMontantForfaitaireCharges avec {
+      -- situation_familiale: PersonneSeule
+      -- nombre_personnes_à_charge: 0
+      -- colocation: vrai
+    }
+  assertion calcul.montant_forfaitaire_charges_d823_16 = 29,03€
+```
+
+### Question 3 : Vérifier → couple, 3 enfants, hors colocation = 97,59 €
+
+Calculer le montant pour un couple avec 3 enfants hors colocation.
+Résultat attendu : 58,08 + 3 × 13,17 = 97,59 € (Art. 9)
+
+```catala
+déclaration champ d'application Test12:
+  résultat calcul contenu CalculMontantForfaitaireCharges
+
+champ d'application Test12:
+  définition calcul égal à
+    résultat de CalculMontantForfaitaireCharges avec {
+      -- situation_familiale: Couple
+      -- nombre_personnes_à_charge: 3
+      -- colocation: faux
+    }
+  assertion calcul.montant_forfaitaire_charges_d823_16 = 97,59€
+```
+
+## Exercice 2 : le plafond de loyer
+
+Références : Arrêté du 27 septembre 2019, articles 7, 8 et 16 1°
+Art. D. 823-16 2° et D. 823-18 du CCH
+
+### Déclaration des structures de données et des champs d'application
+
+```catala
+déclaration champ d'application CalculPlafondLoyer:
+  entrée nombre_personnes_à_charge contenu entier
+  entrée situation_familiale contenu SituationFamiliale
+  entrée zone contenu ZoneDHabitation
+  entrée logement_est_chambre contenu booléen
+  entrée âgées_ou_handicap_adultes_hébergées_onéreux_particuliers
+    contenu booléen
+  entrée colocation contenu booléen
+
+  résultat plafond_loyer_d823_16_2 contenu argent
+
+déclaration énumération ZoneDHabitation:
+  -- Zone1
+  -- Zone2
+  -- Zone3
+```
+
+### Question 1 : Vérifier → personne seule, 0 enfant, Zone I, colocation = 239,48 €
+
+Vérifier que le code retourne 239,48 €.
+(Art. 16 1° — personne seule en colocation, Zone I)
+
+```catala
+déclaration champ d'application Test21:
+  résultat calcul contenu CalculPlafondLoyer
+
+champ d'application Test21:
+  définition calcul égal à
+    résultat de CalculPlafondLoyer avec {
+      -- logement_est_chambre: faux
+      -- âgées_ou_handicap_adultes_hébergées_onéreux_particuliers: faux
+      -- zone: Zone1
+      -- situation_familiale: PersonneSeule
+      -- nombre_personnes_à_charge: 0
+      -- colocation: vrai
+    }
+  assertion calcul.plafond_loyer_d823_16_2 = 239,48€
+```
+
+### Question 2 : Compléter le code (articles 7, 8 et 16)
+
+Compléter le code Catala pour implémenter l'ensemble des règles
+des articles 7, 8 et 16.
+
+#### Arrêté du 27 septembre 2019 - Article 7
+
+Plafonds de loyers de base (art. D. 823-16 2°) par zone et composition
+du foyer :
+
+Zone I   : pers. seule 319,30 € | couple 385,09 € | + 1 enfant 435,24 € | enfant suppl. 63,15 €
+Zone II  : pers. seule 278,28 € | couple 340,62 € | + 1 enfant 383,28 € | enfant suppl. 55,79 €
+Zone III : pers. seule 260,82 € | couple 316,17 € | + 1 enfant 354,51 € | enfant suppl. 50,81 €
+
+La règle de base couvre tous les cas de l'article 7 dans une seule
+définition étiquetée `base`, afin que les exceptions des articles 8 et
+16 s'appliquent correctement quelle que soit la composition du foyer.
+
+```catala
+champ d'application CalculPlafondLoyer:
+
+  étiquette base
+  définition plafond_loyer_d823_16_2 égal à
+    si nombre_personnes_à_charge = 0 alors
+      (si situation_familiale sous forme PersonneSeule alors
+        (selon zone sous forme
+         -- Zone1 : 319,30€
+         -- Zone2 : 278,28€
+         -- Zone3 : 260,82€)
+      sinon
+        (selon zone sous forme
+         -- Zone1 : 385,09€
+         -- Zone2 : 340,62€
+         -- Zone3 : 316,17€))
+    sinon
+      (selon zone sous forme
+       -- Zone1 : 435,24€
+       -- Zone2 : 383,28€
+       -- Zone3 : 354,51€)
+      + ((selon zone sous forme
+          -- Zone1 : 63,15€
+          -- Zone2 : 55,79€
+          -- Zone3 : 50,81€)
+         * (nombre_personnes_à_charge - 1))
+```
+
+#### Arrêté du 27 septembre 2019 - Article 8
+
+Logement occupé est une chambre. Plafonds fixés quelle que soit
+la taille de la famille :
+- 90 % du plafond personne isolée (cas général)
+- 75 % du plafond personne isolée (personnes âgées ou handicapées
+  adultes hébergées à titre onéreux chez des particuliers)
+
+Zone I   : cas général 287,37 € | âgées/handicapées 239,48 €
+Zone II  : cas général 250,45 € | âgées/handicapées 208,71 €
+Zone III : cas général 234,74 € | âgées/handicapées 195,62 €
+
+```catala
+champ d'application CalculPlafondLoyer:
+
+  # Chambre, cas général
+  exception base
+  définition plafond_loyer_d823_16_2 sous condition
+    logement_est_chambre
+    et non âgées_ou_handicap_adultes_hébergées_onéreux_particuliers
+  conséquence égal à
+    selon zone sous forme
+    -- Zone1 : 287,37€
+    -- Zone2 : 250,45€
+    -- Zone3 : 234,74€
+
+  # Chambre, personnes âgées ou handicapées
+  exception base
+  définition plafond_loyer_d823_16_2 sous condition
+    logement_est_chambre
+    et âgées_ou_handicap_adultes_hébergées_onéreux_particuliers
+  conséquence égal à
+    selon zone sous forme
+    -- Zone1 : 239,48€
+    -- Zone2 : 208,71€
+    -- Zone3 : 195,62€
+```
+
+#### Arrêté du 27 septembre 2019 - Article 16 1°
+
+Colocataires (art. D. 823-18) : plafonds fixés à 75 % des plafonds
+de l'article 7, arrondis au centime le plus proche.
+
+Zone I : pers. seule 239,48 € | couple 288,82 € | + 1 enfant 326,43 € | enfant suppl. 47,36 €
+Zone II : pers. seule 208,71 € | couple 255,47 € | + 1 enfant 287,46 € | enfant suppl. 41,84 €
+Zone III : pers. seule 195,62 € | couple 237,13 € | + 1 enfant 265,88 € | enfant suppl. 38,11 €
+
+```catala
+champ d'application CalculPlafondLoyer:
+
+  # Colocation, personne seule, 0 enfant
+  exception base
+  définition plafond_loyer_d823_16_2 sous condition
+    colocation
+    et (situation_familiale sous forme PersonneSeule)
+    et nombre_personnes_à_charge = 0
+  conséquence égal à
+    selon zone sous forme
+    -- Zone1 : 239,48€
+    -- Zone2 : 208,71€
+    -- Zone3 : 195,62€
+
+  # Colocation, couple, 0 enfant
+  exception base
+  définition plafond_loyer_d823_16_2 sous condition
+    colocation
+    et (situation_familiale sous forme Couple)
+    et nombre_personnes_à_charge = 0
+  conséquence égal à
+    selon zone sous forme
+    -- Zone1 : 288,82€
+    -- Zone2 : 255,47€
+    -- Zone3 : 237,13€
+
+  # Colocation, au moins 1 enfant
+  exception base
+  définition plafond_loyer_d823_16_2 sous condition
+    colocation
+    et nombre_personnes_à_charge >= 1
+  conséquence égal à
+    (selon zone sous forme
+    -- Zone1 : 326,43€
+    -- Zone2 : 287,46€
+    -- Zone3 : 265,88€)
+    + ((selon zone sous forme
+        -- Zone1 : 47,36€
+        -- Zone2 : 41,84€
+        -- Zone3 : 38,11€)
+       * (nombre_personnes_à_charge - 1))
+```
+
+### Question 3 : Vérifier → couple, 3 enfants, Zone II, cas standard = 494,86 €
+
+Calculer le plafond pour un couple avec 3 enfants en Zone II,
+hors chambre et colocation.
+Résultat attendu : 383,28 + 2 × 55,79 = 494,86 € (Art. 7)
+
+```catala
+déclaration champ d'application Test22:
+  résultat calcul contenu CalculPlafondLoyer
+
+champ d'application Test22:
+  définition calcul égal à
+    résultat de CalculPlafondLoyer avec {
+      -- logement_est_chambre: faux
+      -- âgées_ou_handicap_adultes_hébergées_onéreux_particuliers: faux
+      -- zone: Zone2
+      -- situation_familiale: Couple
+      -- nombre_personnes_à_charge: 3
+      -- colocation: faux
+    }
+  assertion calcul.plafond_loyer_d823_16_2 = 494,86€
+```
+
+### Question 4 : Cas conflictuel — chambre ET colocation simultanément
+
+Écrire un cas de test pour une personne vivant à la fois dans une
+chambre et en colocation. Observer le comportement de Catala.
+
+Ce cas provoque un conflit : l'article 8 (chambre) et l'article 16 1°
+(colocation) sont tous deux des exceptions à la règle de base sans
+ordre de priorité défini entre eux. Catala lève une erreur de conflit.
+
+Le texte de loi ne tranche pas ce cas. Une approche raisonnable serait
+d'appliquer le minimum des deux plafonds (interprétation la plus
+favorable au bénéficiaire), mais cela nécessiterait une règle explicite
+du législateur.
+
+```catala
+déclaration champ d'application Test23:
+  résultat calcul contenu CalculPlafondLoyer
+
+champ d'application Test23:
+  définition calcul égal à
+    résultat de CalculPlafondLoyer avec {
+      -- logement_est_chambre: vrai
+      -- âgées_ou_handicap_adultes_hébergées_onéreux_particuliers: faux
+      -- zone: Zone1
+      -- situation_familiale: PersonneSeule
+      -- nombre_personnes_à_charge: 0
+      -- colocation: vrai
+    }
+```

@@ -1,0 +1,34 @@
+# --- Artefacts de compilation Catala ---
+_build/
+*.tmp
+
+# Cibles générées par `catala` (selon le backend utilisé)
+*.ml
+*.mli
+*.py
+*.c
+*.h
+*.html
+*.tex
+*.pdf.aux
+*.pdf.log
+*.pdf.out
+
+# --- OCaml / dune / opam ---
+_opam/
+*.install
+*.merlin
+.merlin
+
+# --- VSCode ---
+.vscode/
+
+# --- Système ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Divers ---
+*.log
+*.bak
+*~

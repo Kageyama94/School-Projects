@@ -1,0 +1,33 @@
+name: Tests Catala
+
+# Quand la CI se déclenche : à chaque push et à chaque pull request
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    # Image Docker contenant déjà le compilateur Catala
+    container:
+      image: catalalang/catala:latest
+
+    steps:
+      # 1. Récupère ton code dans la machine qui exécute la CI
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      # 2. Lance chaque scope de test
+      #    (Test23 est volontairement absent : c'est le conflit attendu, voir Question 4)
+      - name: Test11 - charges, personne seule, colocation
+        run: catala test-scope Test11 APL.catala_fr
+
+      - name: Test12 - charges, couple 3 enfants, hors colocation
+        run: catala test-scope Test12 APL.catala_fr
+
+      - name: Test21 - plafond, personne seule, Zone I, colocation
+        run: catala test-scope Test21 APL.catala_fr
+
+      - name: Test22 - plafond, couple 3 enfants, Zone II
+        run: catala test-scope Test22 APL.catala_fr
