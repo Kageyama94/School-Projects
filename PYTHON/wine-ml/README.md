@@ -10,8 +10,8 @@ Projet de Semestre 6 — Étude de l'impact des notes de critiques et de l'appel
 wine-ml/
 ├── main.py            # Script principal (scraping, nettoyage, apprentissage)
 ├── data/
-│   ├── vins.csv       # Données brutes      (généré par scrape, non versionné)
-│   └── vins_clean.csv # Données nettoyées   (généré par clean,  non versionné)
+│   ├── vins.csv       # Données brutes (généré par scrape, non versionné)
+│   └── vins_clean.csv # Données nettoyées (généré par clean,  non versionné)
 ├── figures/
 │   ├── correlation.png
 │   ├── vis_LR.png
@@ -41,7 +41,7 @@ pip install selenium beautifulsoup4 lxml pandas scikit-learn matplotlib seaborn 
 
 ```bash
 python main.py scrape   # Partie 1 : scrape millesima.fr → data/vins.csv
-python main.py clean    # Partie 2 : nettoie vins.csv   → data/vins_clean.csv
+python main.py clean    # Partie 2 : nettoie vins.csv → data/vins_clean.csv
 python main.py learn    # Partie 3 : entraîne les modèles et génère les figures
 python main.py all      # Enchaîne les trois parties
 ```
