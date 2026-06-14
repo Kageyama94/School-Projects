@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Prédiction de champignon</title>
+</head>
+<body>
+    <h1>Caractéristiques du champignon</h1>
+    <form action="/rep" method="post">
+        <input type="submit" value="Prédire">
+        <table border="1" cellpadding="10">
+            <thead>
+                <th>Couleur (RGB)</th>
+                <th>Forme (Shape)</th>
+                <th>Surface</th>
+                <th>Modèle</th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="vertical-align: top;">
+                        R : <input type="text" name="R" value="0"><br>
+                        G : <input type="text" name="G" value="0"><br>
+                        B : <input type="text" name="B" value="0">
+                    </td>
+                    <td style="vertical-align: top;">
+                        <label><input type="checkbox" name="Shape_Bellshaped" value="1"> Bellshaped</label><br>
+                        <label><input type="checkbox" name="Shape_Bolete" value="1"> Bolete</label><br>
+                        <label><input type="checkbox" name="Shape_Cauliflower" value="1"> Cauliflower</label><br>
+                        <label><input type="checkbox" name="Shape_Chanterelles" value="1"> Chanterelles</label><br>
+                        <label><input type="checkbox" name="Shape_Conical" value="1"> Conical</label><br>
+                        <label><input type="checkbox" name="Shape_Convex" value="1"> Convex</label><br>
+                        <label><input type="checkbox" name="Shape_CoralFungi" value="1"> CoralFungi</label><br>
+                        <label><input type="checkbox" name="Shape_Corticioid" value="1"> Corticioid</label><br>
+                        <label><input type="checkbox" name="Shape_CupFungi" value="1"> CupFungi</label><br>
+                        <label><input type="checkbox" name="Shape_Cylindrical" value="1"> Cylindrical</label><br>
+                        <label><input type="checkbox" name="Shape_Depressed" value="1"> Depressed</label><br>
+                        <label><input type="checkbox" name="Shape_Earthstars" value="1"> Earthstars</label><br>
+                        <label><input type="checkbox" name="Shape_FalseMorels" value="1"> FalseMorels</label><br>
+                        <label><input type="checkbox" name="Shape_Flat" value="1"> Flat</label><br>
+                        <label><input type="checkbox" name="Shape_Funnelshaped" value="1"> Funnelshaped</label><br>
+                        <label><input type="checkbox" name="Shape_JellyFungi" value="1"> JellyFungi</label><br>
+                        <label><input type="checkbox" name="Shape_Knobbed" value="1"> Knobbed</label><br>
+                        <label><input type="checkbox" name="Shape_Polypore" value="1"> Polypore</label><br>
+                        <label><input type="checkbox" name="Shape_Puffballs" value="1"> Puffballs</label><br>
+                        <label><input type="checkbox" name="Shape_Shellshaped" value="1"> Shellshaped</label><br>
+                        <label><input type="checkbox" name="Shape_Stinkhorns" value="1"> Stinkhorns</label><br>
+                        <label><input type="checkbox" name="Shape_ToothFungi" value="1"> ToothFungi</label><br>
+                        <label><input type="checkbox" name="Shape_TrueMorels" value="1"> TrueMorels</label><br>
+                        <label><input type="checkbox" name="Shape_Truffles" value="1"> Truffles</label>
+                    </td>
+                    <td style="vertical-align: top;">
+                        <label><input type="checkbox" name="Surface_Fibrous" value="1"> Fibrous</label><br>
+                        <label><input type="checkbox" name="Surface_FlatScales" value="1"> FlatScales</label><br>
+                        <label><input type="checkbox" name="Surface_Hairy" value="1"> Hairy</label><br>
+                        <label><input type="checkbox" name="Surface_Patches" value="1"> Patches</label><br>
+                        <label><input type="checkbox" name="Surface_Powder" value="1"> Powder</label><br>
+                        <label><input type="checkbox" name="Surface_RaisedScales" value="1"> RaisedScales</label><br>
+                        <label><input type="checkbox" name="Surface_Silky" value="1"> Silky</label><br>
+                        <label><input type="checkbox" name="Surface_Slimy" value="1"> Slimy</label><br>
+                        <label><input type="checkbox" name="Surface_Smooth" value="1"> Smooth</label><br>
+                        <label><input type="checkbox" name="Surface_Velvety" value="1"> Velvety</label>
+                    </td>
+                    <td style="vertical-align: top;">
+                        <select name="modele">
+                            <option value="svm">SVM</option>
+                            <option value="arbre">Arbre de décision</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</body>
+</html>
