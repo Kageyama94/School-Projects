@@ -14,12 +14,12 @@ Chaque projet est rangé par catégorie / langage dans ce dépôt.
 | Tron | 2023 | L1 | Janvier – Mai | Java | P | ✅ |
 | EDT / ADE | 2023 | L2 | Janvier – Mai | Laravel | — | 🚧 |
 | Pizzeria | 2023 | L2 | Janvier – Mai | Laravel | — | 🚧 |
-| Super Maio Bros | 2023 | L2 | Sep – Déc | OCaml | S | ✅ |
+| Super Mario Bros | 2023 | L2 | Sep – Déc | OCaml | S | ✅ |
 | Mushroom | 2024 | — | Janvier – Mai | Python | — | ✅ |
 | JO | 2024 | L2 | Janvier – Mai | Laravel | I | 🚧 |
 | Lemmings | 2024 | L3 | Sep – Déc | Java | P | ✅ |
 | Immo | 2025 | L3 | Janvier – Mai | Python | E | ✅ |
-| Catala | 2025 | L3 | Janvier – Mai | Catala | E | ✅ |
+| APL | 2025 | L3 | Janvier – Mai | Catala | E | ✅ |
 | F1 | 2025 | L3 | Sep – Déc | Java | P / E | ✅ |
 | Wine | 2026 | L3 | Janvier – Mai | Python | — | ✅ |
 
@@ -33,7 +33,7 @@ Chaque projet est rangé par catégorie / langage dans ce dépôt.
 School-Projects/
 ├── Games/        # Jeux Java (HexGame, Othello, Tron, Lemmings, F1)
 ├── PYTHON/       # Projets Machine Learning (Mushroom, Immo, Wine)
-├── CATALA/APL/   # Projet Catala
+├── CATALA/       # Projet APL
 ├── OCAML/        # Projet Super Mario Bros
 ├── LARAVEL/      # Applications web (EDT, Pizzeria, JO)
 ├── .gitattributes
@@ -54,7 +54,7 @@ School-Projects/
 
 - **EDT / ADE** (2023) — Gestion d'emploi du temps.
 - **Pizzeria** (2023) — Gestion d'une pizzeria.
-- **JO** (2024) — Application web sur le thème des Jeux Olympiques.
+- **JO** (2024) — Gestion d'un événement sportif (thème Jeux Olympiques).
 
 ## 🐫 Jeux — OCaml
 
@@ -64,11 +64,11 @@ School-Projects/
 
 - **Mushroom** (2024) — Classification de champignons comestibles / incomestibles / vénéneux.
 - **Immo** (2025) — Prédiction de prix immobiliers en Île-de-France.
-- **Wine** (2026) — Prédiction du prix de vins.
+- **Wine** (2026) — Prédiction du prix de vins de Bordeaux.
 
 ## ⚖️ Catala
 
-- **Catala** (2025) — Projet en langage **Catala**, dédié à la modélisation de règles juridiques / fiscales.
+- **APL** (2025) — Projet dédié à la modélisation de règles juridiques / fiscales.
 
 ---
 
