@@ -1,0 +1,3 @@
+(executable
+ (name mario)
+ (libraries graphics unix))
