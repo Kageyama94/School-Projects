@@ -70,5 +70,5 @@ Le fichier `mario.ml` est organisé en sections : configuration (réglages et ph
 
 - Le niveau est une grille de caractères de 300 colonnes sur 18 lignes.
 - La physique utilise des positions et vitesses flottantes, arrondies à la case pour les collisions.
-- Le rendu utilise le double buffering (`auto_synchronize false` + `synchronize`) pour éviter le scintillement.
+- Le rendu utilise le double buffering (`auto_synchronize false` + `synchronize`) pour un affichage fluide en jeu. (Un scintillement peut apparaître si la fenêtre est redimensionnée, par limitation de la bibliothèque `Graphics`.)
 - La bibliothèque `Graphics` ne permettant pas de lire l'état clavier en temps réel, un système de minuteurs de persistance (`hold`) lisse les entrées pour un déplacement fluide.
