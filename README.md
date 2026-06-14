@@ -42,29 +42,29 @@ School-Projects/
 
 ---
 
-## 🕹️ Jeux & Applications — Java
+## 🕹️ Jeux — Java
 
 - **HexGame** (2021) — Jeu de plateau sur grille hexagonale. Premier projet de programmation.
 - **Othello** (2022) — Implémentation du jeu Othello / Reversi.
 - **Tron** (2023) — Jeu de motos à deux joueurs.
-- **Lemmings** (2024) — Jeu 2D inspiré de *Lemmings*, développé avec Java Swing.
-- **F1** (2025) — Jeu de course Formula 1. Architecture **MVC** et design patterns (Observer, Strategy, Decorator, Factory), avec système d'historique / replay.
+- **Lemmings** (2024) — Jeu 2D inspiré de *Lemmings*.
+- **F1** (2025) — Jeu de course Formula 1.
 
 ## 🌐 Applications Web — Laravel
 
-- **EDT / ADE** (2023) — Application de gestion d'emploi du temps.
-- **Pizzeria** (2023) — Application web de gestion d'une pizzeria (menu, commandes).
+- **EDT / ADE** (2023) — Gestion d'emploi du temps.
+- **Pizzeria** (2023) — Gestion d'une pizzeria.
 - **JO** (2024) — Application web sur le thème des Jeux Olympiques.
 
-## 🐫 OCaml
+## 🐫 Jeux — OCaml
 
 - **Super Mario Bros** (2023) — Jeu de plateforme en OCaml.
 
 ## 🤖 Machine Learning — Python
 
-- **Mushroom** (2024) — Classification de champignons comestibles / vénéneux.
-- **Immo** (2025) — Prédiction de prix immobiliers en Île-de-France (scraping + modèles KNN / Arbre de décision / Régression linéaire).
-- **Wine** (2026) — Prédiction du prix de vins (scraping Millesima + scikit-learn).
+- **Mushroom** (2024) — Classification de champignons comestibles / incomestibles / vénéneux.
+- **Immo** (2025) — Prédiction de prix immobiliers en Île-de-France.
+- **Wine** (2026) — Prédiction du prix de vins.
 
 ## ⚖️ Catala
 
