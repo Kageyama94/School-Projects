@@ -46,8 +46,8 @@ School-Projects/
 
 - **HexGame** (2021) — Jeu de plateau sur grille hexagonale. Premier projet de programmation.
 - **Othello** (2022) — Implémentation du jeu Othello / Reversi.
-- **Tron** (2023) — Jeu de motos lumineuses à deux joueurs.
-- **Lemmings** (2024) — Jeu de puzzle inspiré de *Lemmings*, développé avec Java Swing.
+- **Tron** (2023) — Jeu de motos à deux joueurs.
+- **Lemmings** (2024) — Jeu 2D inspiré de *Lemmings*, développé avec Java Swing.
 - **F1** (2025) — Jeu de course Formula 1. Architecture **MVC** et design patterns (Observer, Strategy, Decorator, Factory), avec système d'historique / replay.
 
 ## 🌐 Applications Web — Laravel
