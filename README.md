@@ -13,11 +13,11 @@ Chaque projet est rangé par catégorie / langage dans ce dépôt.
 | Othello | 2022 | L2 | Sep – Déc | Java | P | ✅ |
 | Tron | 2023 | L1 | Janvier – Mai | Java | P | ✅ |
 | EDT / ADE | 2023 | L2 | Janvier – Mai | Laravel | — | 🚧 |
-| Pizzeria | 2023 | L2 | Janvier – Mai | Laravel | — | 🚧 |
+| Pizzeria | 2023 | L2 | Janvier – Mai | Laravel | — | ✅ |
 | Super Mario Bros | 2023 | L2 | Sep – Déc | OCaml | S | ✅ |
 | Mushroom | 2024 | — | Janvier – Mai | Python | — | ✅ |
 | JO | 2024 | L2 | Janvier – Mai | Laravel | I | 🚧 |
-| Lemmings | 2024 | L3 | Sep – Déc | Java | P | ✅ |
+| Chicks | 2024 | L3 | Sep – Déc | Java | P | ✅ |
 | Immo | 2025 | L3 | Janvier – Mai | Python | E | ✅ |
 | APL | 2025 | L3 | Janvier – Mai | Catala | E | ✅ |
 | F1 | 2025 | L3 | Sep – Déc | Java | P / E | ✅ |
@@ -31,10 +31,9 @@ Chaque projet est rangé par catégorie / langage dans ce dépôt.
 
 ```
 School-Projects/
-├── Games/        # Jeux Java (HexGame, Othello, Tron, Lemmings, F1)
+├── Games/        # Jeux (Java : HexGame, Othello, Tron, Chicks, F1 · OCaml : Super Mario Bros)
 ├── PYTHON/       # Projets Machine Learning (Mushroom, Immo, Wine)
 ├── CATALA/       # Projet APL
-├── OCAML/        # Projet Super Mario Bros
 ├── LARAVEL/      # Applications web (EDT, Pizzeria, JO)
 ├── .gitattributes
 └── README.md
@@ -47,7 +46,7 @@ School-Projects/
 - **HexGame** (2021) — Jeu de plateau sur grille hexagonale. Premier projet de programmation.
 - **Othello** (2022) — Implémentation du jeu Othello / Reversi.
 - **Tron** (2023) — Jeu de motos à deux joueurs.
-- **Lemmings** (2024) — Jeu 2D inspiré de *Lemmings*.
+- **Chicks** (2024) — Jeu de réflexion inspiré de *Lemmings*, sauvez vos poussins.
 - **F1** (2025) — Jeu de course Formula 1.
 
 ## 🌐 Applications Web — Laravel
