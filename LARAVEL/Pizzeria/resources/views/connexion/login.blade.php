@@ -5,24 +5,34 @@
 <h1>Connexion</h1>
 
 @if (session('success'))
-    <p style="color:green">{{ session('success') }}</p>
+    <div class="alert-success">{{ session('success') }}</div>
 @endif
 
 @if ($errors->any())
-    <p style="color:red">{{ $errors->first() }}</p>
+    <div class="alert-error">{{ $errors->first() }}</div>
 @endif
 
-<form action="{{ route('login') }}" method="post">
-    @csrf
-    Identifiant :
-    <input type="text" name="name"><br>
-    Mot de passe :
-    <input type="password" name="password"><br>
-    <label><input type="checkbox" name="remember"> Se souvenir de moi</label><br>
-    <input type="submit" value="Se connecter">
-</form>
+<div class="form-card">
+    <form action="{{ route('login') }}" method="post">
+        @csrf
+        <div class="form-row">
+            <label>Identifiant</label>
+            <input type="text" name="name">
+        </div>
+        <div class="form-row">
+            <label>Mot de passe</label>
+            <input type="password" name="password" minlength="4">
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px">
+            <input type="checkbox" name="remember" id="remember" style="width:auto; margin:0">
+            <label for="remember" style="margin:0; font-weight:normal; cursor:pointer">Se souvenir de moi</label>
+        </div>
+        <input type="submit" value="Se connecter">
+    </form>
 
-<br>
-<p>Pas encore de compte ? <a href="{{ route('register') }}">S'inscrire</a></p>
+    <br>
+    <p style="font-size:.9rem">Pas encore de compte ? <a href="{{ route('register') }}">S'inscrire</a></p>
+    <p style="font-size:.9rem; margin-top:4px"><a href="{{ url('/pizzeria') }}">← Retour à l'accueil</a></p>
+</div>
 
 @endsection

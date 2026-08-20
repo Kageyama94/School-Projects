@@ -2,10 +2,12 @@
 
 @section('content')
 
-<h1>Pizza</h1>
+<h1>Bienvenue chez Pizzeria</h1>
+
+<p style="color:#555; margin-bottom:24px">Découvrez nos pizzas et commandez en ligne.</p>
 
 <h2>Nos pizzas</h2>
-<table border="1" cellpadding="5">
+<table>
     <tr>
         <th>Nom</th>
         <th>Prix</th>
@@ -14,15 +16,16 @@
     @foreach($pizzas as $pizza)
     <tr>
         <td>{{ $pizza->name }}</td>
-        <td>{{ number_format($pizza->price, 2) }} €</td>
+        <td>{{ number_format($pizza->price, 2, ',', ' ') }} €</td>
         <td>{{ $pizza->description }}</td>
     </tr>
     @endforeach
 </table>
 
 <br>
-
-<a href="{{ route('login') }}">Se connecter</a>
-<a href="{{ route('register') }}">S'inscrire</a>
+<div style="display:flex; gap:12px">
+    <a href="{{ route('login') }}"><button>Se connecter</button></a>
+    <a href="{{ route('register') }}"><button type="button">S'inscrire</button></a>
+</div>
 
 @endsection

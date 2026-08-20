@@ -4,38 +4,42 @@
 
 <h1>Tableau de bord</h1>
 
-<form action="{{ route('logout') }}" method="post" style="display:inline">
-    @csrf
-    <input type="submit" value="Se déconnecter">
-</form>
-
-<hr>
+<div class="nav-actions">
+    <form action="{{ route('logout') }}" method="post">
+        @csrf
+        <input type="submit" value="Se déconnecter">
+    </form>
+</div>
 
 <h2>Statistiques</h2>
-<table border="1" cellpadding="5">
-    <tr>
-        <td>Pizzas au menu</td>
-        <td><strong>{{ $pizzaCount }}</strong></td>
-    </tr>
-    <tr>
-        <td>Commandes totales</td>
-        <td><strong>{{ $orderCount }}</strong></td>
-    </tr>
-    <tr>
-        <td>Commandes en cours</td>
-        <td><strong>{{ $pendingCount }}</strong></td>
-    </tr>
-    <tr>
-        <td>Livreurs</td>
-        <td><strong>{{ $driverCount }}</strong></td>
-    </tr>
-</table>
+<div class="stats">
+    <div class="stat-card">
+        <div class="number">{{ $pizzaCount }}</div>
+        <div class="label">Pizzas au menu</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ $orderCount }}</div>
+        <div class="label">Commandes totales</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ $pendingCount }}</div>
+        <div class="label">Commandes en cours</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ $deliveredCount }}</div>
+        <div class="label">Livrées</div>
+    </div>
+    <div class="stat-card">
+        <div class="number">{{ $driverCount }}</div>
+        <div class="label">Livreurs</div>
+    </div>
+</div>
 
 <h2>Gestion</h2>
-<ul>
-    <li><a href="{{ route('list') }}">Pizzas</a> — ajouter/modifier une pizza</li>
-    <li><a href="{{ route('order') }}">Commandes</a> — consulter les commandes</li>
-    <li><a href="{{ route('delivery') }}">Livreurs</a> — gérer les livreurs</li>
+<ul style="list-style:none; display:flex; gap:12px; flex-wrap:wrap;">
+    <li><a href="{{ route('admin.pizza.index') }}"><button type="button">🍕 Pizzas</button></a></li>
+    <li><a href="{{ route('admin.order.index') }}"><button type="button">📋 Commandes</button></a></li>
+    <li><a href="{{ route('admin.driver.index') }}"><button type="button">🚗 Livreurs</button></a></li>
 </ul>
 
 @endsection
