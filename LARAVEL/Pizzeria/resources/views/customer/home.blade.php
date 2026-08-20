@@ -2,51 +2,67 @@
 
 @section('content')
 
-<h1>Bienvenue, {{ Auth::user()->name }}</h1>
+<h1>Bienvenue, {{ $customer?->first_name ?? Auth::user()->name }} !</h1>
 
-<a href="{{ route('order.form', Auth::id()) }}">Passer une commande</a>
+@if (session('success'))
+    <div class="alert-success">{{ session('success') }}</div>
+@endif
 
-<form action="{{ route('logout') }}" method="post" style="display:inline; margin-left:10px">
-    @csrf
-    <input type="submit" value="Se déconnecter">
-</form>
+@if ($errors->any())
+    <div class="alert-error">{{ $errors->first() }}</div>
+@endif
 
-<hr>
+<div class="nav-actions">
+    <a href="{{ route('order.create', Auth::id()) }}"><button type="button">🍕 Passer une commande</button></a>
+    <a href="{{ route('customer.profile.edit', Auth::id()) }}"><button type="button">Mon profil</button></a>
+    <form action="{{ route('logout') }}" method="post">
+        @csrf
+        <input type="submit" value="Se déconnecter">
+    </form>
+</div>
 
 <h2>Historique de mes commandes</h2>
 
-@if($orders->isEmpty())
-    <p>Vous n'avez pas encore passé de commande.</p>
+@if($groups->isEmpty())
+    <p style="color:#777">Vous n'avez pas encore passé de commande.</p>
 @else
-    <table border="1" cellpadding="5">
+    <table>
         <tr>
-            <th>Pizza</th>
-            <th>Prix unit.</th>
-            <th>Quantité</th>
+            <th>Date</th>
+            <th>Pizzas</th>
             <th>Total</th>
             <th>Adresse</th>
-            <th>Date</th>
             <th>Statut</th>
+            <th></th>
         </tr>
-        @foreach($orders as $order)
-        <tr>
-            <td>{{ $order->pizza_name }}</td>
-            <td>{{ number_format($order->unit_price, 2) }} €</td>
-            <td>{{ $order->quantity }}</td>
-            <td>{{ number_format($order->unit_price * $order->quantity, 2) }} €</td>
-            <td>{{ $order->address }}, {{ $order->postal_code }}</td>
-            <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
+        @foreach($groups as $groupId => $items)
+        @php
+            $first  = $items->first();
+            $total  = $items->sum('line_total');
+            $pizzas = $items->map(fn($o) => $o->pizza_name . ' x' . $o->quantity)->join(', ');
+        @endphp
+        <tr style="cursor:pointer" onclick="window.location='{{ route('order.show', [Auth::id(), $groupId]) }}'">
+            <td>{{ $first->created_at->format('d/m/Y H:i') }}</td>
+            <td>{{ $pizzas }}</td>
+            <td>{{ number_format($total, 2, ',', ' ') }} €</td>
+            <td>{{ $first->address }}, {{ $first->postal_code }}</td>
             <td>
-                @match($order->status)
-                    'preparing'  => 'En préparation',
-                    'delivering' => 'En livraison',
-                    'delivered'  => '✓ Livrée',
-                    default      => $order->status,
-                @endmatch
+                @include('partials.status-badge', ['status' => $first->status])
+            </td>
+            <td onclick="event.stopPropagation()">
+                @if($first->status === 'pending')
+                    <form action="{{ route('order.cancel', [Auth::id(), $groupId]) }}" method="post"
+                          onsubmit="return confirm('Annuler cette commande ?')">
+                        @csrf
+                        @method('DELETE')
+                        <input type="submit" value="Annuler" style="background:#7f8c8d">
+                    </form>
+                @endif
             </td>
         </tr>
         @endforeach
     </table>
+    {{ $groupsPage->links() }}
 @endif
 
 @endsection

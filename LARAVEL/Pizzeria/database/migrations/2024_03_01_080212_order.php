@@ -18,14 +18,14 @@ return new class extends Migration
             $table->integer('quantity');
             $table->string('address');
             $table->string('postal_code');
-            $table->enum('status', ['preparing', 'delivering', 'delivered'])->default('preparing');
+            $table->enum('status', ['pending', 'preparing', 'delivering', 'delivered'])->default('pending');
             $table->foreignIdFor(Driver::class)->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
         });
 
         Schema::create('customer_order', function (Blueprint $table) {
-            $table->foreignIdFor(Customer::class);
-            $table->foreignIdFor(Order::class);
+            $table->foreignIdFor(Customer::class)->constrained()->cascadeOnDelete();
+            $table->foreignIdFor(Order::class)->constrained()->cascadeOnDelete();
             $table->primary(['customer_id', 'order_id']);
         });
     }

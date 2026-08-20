@@ -10,7 +10,7 @@ class ConnexionController extends Controller
 {
     private function redirectByRole() {
         return match(Auth::user()->role) {
-            'admin' => redirect()->route('admin'),
+            'admin' => redirect()->route('admin.home'),
             'driver' => redirect()->route('driver.home'),
             default => redirect()->route('customer.home', Auth::id()),
         };
@@ -52,7 +52,7 @@ class ConnexionController extends Controller
             return $this->redirectByRole();
         }
 
-        return back()->withErrors(['name' => 'Identifiants incorrects.']);
+        return back()->withErrors(['name' => trans('auth.failed')]);
     }
 
     public function logout(Request $request) {

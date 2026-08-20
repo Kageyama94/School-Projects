@@ -9,7 +9,13 @@ class Order extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['pizza_name', 'unit_price', 'quantity', 'address', 'postal_code', 'status', 'driver_id'];
+    protected $fillable = ['order_group_id', 'pizza_name', 'unit_price', 'quantity', 'address', 'postal_code', 'status', 'driver_id', 'driver_name'];
+
+    protected $casts = ['delivered_at' => 'datetime'];
+
+    public function getLineTotalAttribute() {
+        return $this->unit_price * $this->quantity;
+    }
 
     public function customers() {
         return $this->belongsToMany(Customer::class);

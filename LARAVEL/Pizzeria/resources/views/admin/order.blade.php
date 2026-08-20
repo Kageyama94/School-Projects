@@ -5,62 +5,104 @@
 <h1>Commandes</h1>
 
 @if (session('success'))
-    <p style="color:green">{{ session('success') }}</p>
+    <div class="alert-success">{{ session('success') }}</div>
 @endif
+@if ($errors->any())
+    <div class="alert-error">{{ $errors->first() }}</div>
+@endif
+
+<form method="GET" action="{{ route('admin.order.index') }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:20px">
+    <select name="driver_id">
+        <option value="">Tous les livreurs</option>
+        @foreach($drivers as $driver)
+            <option value="{{ $driver->id }}" {{ request('driver_id') == $driver->id ? 'selected' : '' }}>
+                {{ $driver->name }}
+            </option>
+        @endforeach
+    </select>
+    <input type="date" name="date" value="{{ request('date') }}">
+    <button type="submit">Filtrer</button>
+    @if(request('driver_id') || request('date'))
+        <a href="{{ route('admin.order.index') }}"><button type="button">✕ Réinitialiser</button></a>
+    @endif
+</form>
+
+<h2>Nouvelles commandes</h2>
+
+@if($pendingGroups->isEmpty())
+    <p style="color:#777">Aucune nouvelle commande.</p>
+@else
+    <table>
+        <tr>
+            <th>N°</th>
+            <th>Date</th>
+            <th>Total</th>
+            <th>Action</th>
+        </tr>
+        @foreach($pendingGroups as $groupId => $items)
+        @php
+            $first = $items->first();
+            $total = $items->sum('line_total');
+        @endphp
+        <tr style="cursor:pointer" onclick="window.location='{{ route('admin.order.show', $groupId) }}'">
+            <td>#{{ $first->id }}</td>
+            <td>{{ $first->created_at->format('d/m/Y H:i') }}</td>
+            <td>{{ number_format($total, 2, ',', ' ') }} €</td>
+            <td onclick="event.stopPropagation()">
+                <form action="{{ route('admin.order.accept', $groupId) }}" method="post">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit">Accepter ✓</button>
+                </form>
+            </td>
+        </tr>
+        @endforeach
+    </table>
+@endif
+
+<hr>
 
 <h2>Commandes en cours</h2>
 
-@if($orders->isEmpty())
-    <p>Aucune commande en cours.</p>
+@if($activeGroups->isEmpty())
+    <p style="color:#777">Aucune commande en cours.</p>
 @else
-    <table border="1" cellpadding="5">
+    <table>
         <tr>
-            <th>Client</th>
-            <th>Téléphone</th>
-            <th>Pizza</th>
-            <th>Prix unit.</th>
-            <th>Quantité</th>
-            <th>Total</th>
-            <th>Adresse</th>
-            <th>Livreur</th>
-            <th>Statut</th>
+            <th>N°</th>
             <th>Date</th>
+            <th>Total</th>
+            <th>Statut</th>
+            <th>Assigner un livreur</th>
         </tr>
-        @foreach($orders as $order)
-            @php $customer = $order->customers->first() @endphp
-            <tr>
-                <td>{{ $customer ? $customer->first_name.' '.$customer->last_name : '—' }}</td>
-                <td>{{ $customer?->phone ?? '—' }}</td>
-                <td>{{ $order->pizza_name }}</td>
-                <td>{{ number_format($order->unit_price, 2) }} €</td>
-                <td>{{ $order->quantity }}</td>
-                <td>{{ number_format($order->unit_price * $order->quantity, 2) }} €</td>
-                <td>{{ $order->address }}, {{ $order->postal_code }}</td>
-                <td>
-                    <form action="{{ route('order.assign', $order->id) }}" method="post" style="display:flex;gap:4px">
-                        @csrf
-                        @method('PATCH')
-                        <select name="driver_id">
-                            <option value="">— Aucun —</option>
-                            @foreach($drivers as $driver)
-                                <option value="{{ $driver->id }}"
-                                    {{ $order->driver_id == $driver->id ? 'selected' : '' }}>
-                                    {{ $driver->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <button type="submit">OK</button>
-                    </form>
-                </td>
-                <td>
-                    @match($order->status)
-                        'preparing'  => 'En préparation',
-                        'delivering' => 'En livraison',
-                        default      => $order->status,
-                    @endmatch
-                </td>
-                <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
-            </tr>
+        @foreach($activeGroups as $groupId => $items)
+        @php
+            $first = $items->first();
+            $total = $items->sum('line_total');
+        @endphp
+        <tr style="cursor:pointer" onclick="window.location='{{ route('admin.order.show', $groupId) }}'">
+            <td>#{{ $first->id }}</td>
+            <td>{{ $first->created_at->format('d/m/Y H:i') }}</td>
+            <td>{{ number_format($total, 2, ',', ' ') }} €</td>
+            <td>
+                @include('partials.status-badge', ['status' => $first->status])
+            </td>
+            <td onclick="event.stopPropagation()">
+                <form action="{{ route('admin.order.assign', $groupId) }}" method="post" style="display:flex; gap:4px">
+                    @csrf
+                    @method('PATCH')
+                    <select name="driver_id">
+                        <option value="">— Aucun —</option>
+                        @foreach($drivers as $driver)
+                            <option value="{{ $driver->id }}" {{ $first->driver_id == $driver->id ? 'selected' : '' }}>
+                                {{ $driver->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <button type="submit">OK</button>
+                </form>
+            </td>
+        </tr>
         @endforeach
     </table>
 @endif
@@ -69,42 +111,33 @@
 
 <h2>Commandes livrées</h2>
 
-@if($deliveredOrders->isEmpty())
-    <p>Aucune commande livrée.</p>
+@if($deliveredGroups->isEmpty())
+    <p style="color:#777">Aucune commande livrée.</p>
 @else
-    <table border="1" cellpadding="5">
+    <table>
         <tr>
-            <th>Client</th>
-            <th>Téléphone</th>
-            <th>Pizza</th>
-            <th>Prix unit.</th>
-            <th>Quantité</th>
+            <th>N°</th>
+            <th>Date commande</th>
             <th>Total</th>
-            <th>Adresse</th>
             <th>Livreur</th>
-            <th>Date</th>
         </tr>
-        @foreach($deliveredOrders as $order)
-            @php $customer = $order->customers->first() @endphp
-            <tr>
-                <td>{{ $customer ? $customer->first_name.' '.$customer->last_name : '—' }}</td>
-                <td>{{ $customer?->phone ?? '—' }}</td>
-                <td>{{ $order->pizza_name }}</td>
-                <td>{{ number_format($order->unit_price, 2) }} €</td>
-                <td>{{ $order->quantity }}</td>
-                <td>{{ number_format($order->unit_price * $order->quantity, 2) }} €</td>
-                <td>{{ $order->address }}, {{ $order->postal_code }}</td>
-                <td>{{ $order->driver?->name ?? '—' }}</td>
-                <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
-            </tr>
+        @foreach($deliveredGroups as $groupId => $items)
+        @php
+            $first = $items->first();
+            $total = $items->sum('line_total');
+        @endphp
+        <tr style="cursor:pointer" onclick="window.location='{{ route('admin.order.show', $groupId) }}'">
+            <td>#{{ $first->id }}</td>
+            <td>{{ $first->created_at->format('d/m/Y H:i') }}</td>
+            <td>{{ number_format($total, 2, ',', ' ') }} €</td>
+            <td>{{ $first->driver_name ?? '—' }}</td>
+        </tr>
         @endforeach
     </table>
-    {{ $deliveredOrders->links() }}
+    {{ $deliveredPage->links() }}
 @endif
 
 <br>
-<a href="{{ route('admin') }}">
-    <button type="button">Retour au tableau de bord</button>
-</a>
+<a href="{{ route('admin.home') }}"><button type="button">← Tableau de bord</button></a>
 
 @endsection
