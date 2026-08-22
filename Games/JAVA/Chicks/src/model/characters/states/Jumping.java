@@ -3,7 +3,7 @@ package model.characters.states;
 import model.characters.*;
 
 public class Jumping implements CharacterState {
-    private static final int JUMP = GameConfig.JUMP_SPEED;  
+    private static final int JUMP = GameConfig.JUMP_SPEED;
     private static final int cell = GameConfig.CELL_SIZE;
 
     @Override

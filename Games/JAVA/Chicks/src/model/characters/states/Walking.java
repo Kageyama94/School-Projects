@@ -9,12 +9,14 @@ public class Walking implements CharacterState {
     public void update(GameCharacter character) {
         int direction = character.getDirection();
         int nextX = character.getX() + direction;
-        if (isAtBoundary(character, nextX, direction) || isBlockerAhead(character)) character.setDirection(direction * -1);
+        if (isAtBoundary(character, nextX, direction) || isBlockerAhead(character)) reverse(character);
         else if (isFalling(character)) character.setState(new Falling());
         else if (PhysicsHelper.canJump(character) && character.getX() % cell == 0) character.setState(new Jumping());
-        else if (isCollision(character)) character.setDirection(direction * -1);
+        else if (isCollision(character)) reverse(character);
         else character.setX(character.getX() + direction);
     }
+
+    private void reverse(GameCharacter character) { character.setDirection(character.getDirection() * -1); }
 
     private boolean isAtBoundary(GameCharacter character, int nextX, int direction) {
         int frameWidth = character.getFrameWidth();

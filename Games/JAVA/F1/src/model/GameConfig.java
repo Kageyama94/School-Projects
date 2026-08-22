@@ -35,8 +35,13 @@ public final class GameConfig {
 
     public static final class Game {
         public static final int LAPS_TO_WIN = 3;
-        public static final int TICK_MILLIS = 100;
+        public static final int TICK_MILLIS = 1000;
         private Game() {}
+    }
+
+    public static final class History {
+        public static final int MAX_SNAPSHOTS = 5000;
+        private History() {}
     }
 
     public static final class Track {

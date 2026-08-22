@@ -9,15 +9,18 @@ import model.car.*;
 import model.game.*;
 import model.observer.*;
 
-public class CarsPanel extends JPanel implements ModelListener {
+public class CarsPanel extends ObservingPanel {
     private final Player player;
     private final GameController controller;
-    private final JLabel nameLabel = buildLabel();
-    private final JLabel energyLabel = buildLabel();
-    private final JLabel lapsLabel = buildLabel();
-    private final JLabel stateLabel = buildLabel();
+    private final JLabel nameLabel = titleLabel();
+    private final JLabel energyLabel = titleLabel();
+    private final JLabel lapsLabel = titleLabel();
+    private final JLabel stateLabel = titleLabel();
+    private final JButton bwdButton = new JButton("Ralentir");
+    private final JButton fwdButton = new JButton("Accélérer");
 
     public CarsPanel(Player player, GameController controller) {
+        super(ModelEvent.Type.TICK, ModelEvent.Type.STATE_CHANGED, ModelEvent.Type.FUEL_CHANGED, ModelEvent.Type.LAP_CHANGED);
         this.player = player;
         this.controller = controller;
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -33,26 +36,17 @@ public class CarsPanel extends JPanel implements ModelListener {
         refresh();
     }
 
-    private static JLabel buildLabel() {
-        JLabel l = new JLabel();
-        l.setForeground(ViewConfig.TEXT);
-        l.setAlignmentX(Component.CENTER_ALIGNMENT);
-        l.setFont(l.getFont().deriveFont(Font.BOLD, ViewConfig.FONT_TITLE));
-        return l;
-    }
+    private static JLabel titleLabel() { return ViewConfig.label("", Font.BOLD, ViewConfig.FONT_TITLE); }
 
     private void addButtons() {
-        JButton bwd = new JButton("Ralentir");
-        JButton fwd = new JButton("Accélérer");
-
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER, ViewConfig.BUTTON_GAP, 0));
         btns.setOpaque(false);
-        btns.add(bwd);
-        btns.add(fwd);
+        btns.add(bwdButton);
+        btns.add(fwdButton);
         add(btns);
 
-        bwd.addActionListener(_ -> changeSpeed(-1));
-        fwd.addActionListener(_ -> changeSpeed(+1));
+        bwdButton.addActionListener(_ -> changeSpeed(-1));
+        fwdButton.addActionListener(_ -> changeSpeed(+1));
     }
 
     private void changeSpeed(int delta) {
@@ -75,8 +69,13 @@ public class CarsPanel extends JPanel implements ModelListener {
         t.start();
     }
 
-    private void refresh() {
+    @Override
+    protected void refresh() {
         Car car = player.getCar();
+
+        boolean running = controller.getGame().getState() == Game.State.RUNNING;
+        bwdButton.setEnabled(running);
+        fwdButton.setEnabled(running);
 
         nameLabel.setText("Voiture " + player.getName());
         energyLabel.setText(car.isOnBattery()
@@ -87,12 +86,5 @@ public class CarsPanel extends JPanel implements ModelListener {
         String state = "État: " + car.getState();
         if (car.getState() == Car.State.DAMAGED) state += "(" + car.getDamageTurnsLeft() + ")";
         stateLabel.setText(state);
-    }
-
-    @Override public void onModelEvent(ModelEvent e) {
-        switch (e.type()) {
-            case TICK, STATE_CHANGED, FUEL_CHANGED, LAP_CHANGED -> refresh();
-            default -> {}
-        }
     }
 }

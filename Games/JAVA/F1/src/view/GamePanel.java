@@ -1,9 +1,8 @@
 package view;
 
-import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.*;
 
 import model.car.Car;
@@ -12,11 +11,13 @@ import model.observer.*;
 import model.track.*;
 import model.track.Track.*;
 
-public class GamePanel extends JPanel implements ModelListener {
+public class GamePanel extends ObservingPanel {
     private final Game game;
     private int cellW, cellH;
+    private BufferedImage boardCache;
 
     public GamePanel(Game game) {
+        super(ModelEvent.Type.TICK, ModelEvent.Type.POSITION_CHANGED, ModelEvent.Type.STATE_CHANGED);
         this.game = game;
         setPreferredSize(ViewConfig.GAME_SIZE);
         setBackground(ViewConfig.DARK);
@@ -28,12 +29,25 @@ public class GamePanel extends JPanel implements ModelListener {
         super.paintComponent(g);
         Track track = game.getTrack();
 
-        cellW = getWidth() / track.cols();
-        cellH = getHeight() / track.rows();
-        Font numberFont = g.getFont().deriveFont(Font.BOLD, Math.min(cellW, cellH) * ViewConfig.CELL_FONT_RATIO);
+        cellW = Math.max(1, getWidth() / track.cols());
+        cellH = Math.max(1, getHeight() / track.rows());
 
-        drawBoard(track, g, numberFont);
+        if (boardCache == null || boardCache.getWidth() != getWidth() || boardCache.getHeight() != getHeight())
+            boardCache = renderBoard(track);
+        g.drawImage(boardCache, 0, 0, null);
         drawCars(track, g);
+    }
+
+    private BufferedImage renderBoard(Track track) {
+        int w = Math.max(getWidth(), 1), h = Math.max(getHeight(), 1);
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D bg = img.createGraphics();
+        bg.setColor(getBackground());
+        bg.fillRect(0, 0, w, h);
+        Font numberFont = bg.getFont().deriveFont(Font.BOLD, Math.min(cellW, cellH) * ViewConfig.CELL_FONT_RATIO);
+        drawBoard(track, bg, numberFont);
+        bg.dispose();
+        return img;
     }
 
     private void drawBoard(Track track, Graphics g, Font numberFont) {
@@ -87,31 +101,21 @@ public class GamePanel extends JPanel implements ModelListener {
     }
 
     private void drawCars(Track track, Graphics g) {
-        Map<Cell, List<Car>> cellMap = carsByCell(track);
+        Map<Integer, List<Car>> carsByIndex = new HashMap<>();
+        for (var p : game.getPlayers()) {
+            Car car = p.getCar();
+            carsByIndex.computeIfAbsent(car.getRoadIndex(), i -> new ArrayList<>()).add(car);
+        }
+
         List<Cell> road = track.getRoad();
-
-        for (var e : cellMap.entrySet()) {
-            Cell pos = e.getKey();
-            int idx = road.indexOf(pos);
-            if (idx == -1) continue;
-
-            Cell next = (idx < road.size() - 1) ? road.get(idx + 1) : road.get(idx - 1);
+        for (var e : carsByIndex.entrySet()) {
+            int idx = e.getKey();
+            Cell pos = road.get(idx);
+            Cell next = road.get((idx + 1) % road.size());
 
             boolean vertical = (next.col() == pos.col());
             drawCarsInCell(g, e.getValue(), pos.col() * cellW, pos.row() * cellH, vertical);
         }
-    }
-
-    private Map<Cell, List<Car>> carsByCell(Track track) {
-        Map<Cell, List<Car>> cellMap = new HashMap<>();
-        List<Cell> road = track.getRoad();
-
-        for (var p : game.getPlayers()) {
-            Car car = p.getCar();
-            Cell pos = road.get(car.getRoadIndex());
-            cellMap.computeIfAbsent(pos, e -> new ArrayList<>()).add(car);
-        }
-        return cellMap;
     }
 
     private void drawCarsInCell(Graphics g, List<Car> cars, int cellX, int cellY, boolean vertical) {
@@ -141,10 +145,5 @@ public class GamePanel extends JPanel implements ModelListener {
     }
 
     @Override
-    public void onModelEvent(ModelEvent e) {
-        switch (e.type()) {
-            case TICK, POSITION_CHANGED, STATE_CHANGED -> repaint();
-            default -> {}
-        }
-    }
+    protected void refresh() { repaint(); }
 }

@@ -35,7 +35,8 @@ F1/
 │   │   ├── Car.java
 │   │   └── policy/             # Stratégies de déplacement
 │   │       ├── Policy.java
-│   │       ├── Movement.java
+│   │       ├── StandardDriving.java
+│   │       ├── PolicyDecorator.java
 │   │       ├── SoundBooster.java
 │   │       ├── DrunkDriver.java
 │   │       ├── HybridSystem.java
@@ -59,6 +60,7 @@ F1/
     ├── ControlPanel.java
     ├── LeaderboardPanel.java
     ├── SetupPanel.java
+    ├── ObservingPanel.java
     ├── SwingTicker.java
     ├── SoundPlayer.java
     └── ViewConfig.java
@@ -92,7 +94,7 @@ F1/
 | **Hybrid System** | Dispose d'une batterie rechargeable au freinage |
 
 ### ⏱️ Système de ticks
-Chaque *tick* (100 ms par défaut) :
+La course démarre automatiquement à l'ouverture de la fenêtre. Chaque *tick* (1 seconde par défaut) :
 1. Consomme le carburant selon l'état
 2. Lance les dés pour chaque voiture
 3. Avance la voiture sur le circuit
@@ -100,12 +102,12 @@ Chaque *tick* (100 ms par défaut) :
 5. Enregistre un snapshot dans l'historique
 
 ### 🕹️ Contrôles joueur
-- **Accélérer / Ralentir** : monte ou descend d'un cran dans les états
-- **Pause / Reprendre** : contrôle du flux de jeu
-- **Reculer / Avancer** : navigation dans l'historique (en mode FINISHED)
+- **Accélérer / Ralentir** : monte ou descend d'un cran dans les états (uniquement pendant que la course est en cours)
+- **Pause / Reprendre** : contrôle du flux de jeu ; reprendre resynchronise toujours sur le dernier tick réellement joué
+- **Reculer / Avancer** : navigation dans l'historique, disponible en pause comme en fin de partie (mode FINISHED)
 
 ### 📜 Historique
-À la fin de la partie, l'historique complet des snapshots est navigable tick par tick (avant/arrière).
+Dès que la course est en pause (ou terminée), l'historique complet des snapshots est navigable tick par tick (avant/arrière). C'est une consultation en lecture seule : reprendre la course repart toujours du dernier tick réellement joué, jamais du point consulté.
 
 ---
 
@@ -135,7 +137,8 @@ GameConfig.Battery.MAX             // 100%
 GameConfig.Battery.CONSUMPTION     // -10% par tick
 GameConfig.Battery.RECHARGE        // +5% au freinage
 GameConfig.Game.LAPS_TO_WIN        // 3 tours
-GameConfig.Game.TICK_MILLIS        // 100 ms
+GameConfig.Game.TICK_MILLIS        // 1000 ms (1 seconde)
+GameConfig.History.MAX_SNAPSHOTS   // 5000 snapshots max dans l'historique
 GameConfig.Track.ROWS / COLS       // 10 × 20
 ```
 
@@ -150,8 +153,9 @@ GameConfig.Track.ROWS / COLS       // 10 × 20
 ### Compilation et exécution
 ```bash
 # Depuis la racine du projet
-javac -d out -sourcepath src src/F1/F1App.java
-java -cp out F1.F1App
+javac -d bin -sourcepath src src/app/Main.java
+cp -r src/assets bin/assets   # javac ne copie pas les ressources non-.java
+java -cp bin app.Main
 ```
 
 ### Note VS Code (workspace multi-projets)
@@ -193,7 +197,8 @@ Les chiffres indiquent les virages avec leur limite de pas autorisés.
 
 - **MVC** — séparation stricte Modèle / Vue / Contrôleur
 - **Observer** — `AbstractObservableModel` + `ModelListener`
-- **Strategy** — interface `Policy` avec `Movement`, `SoundBooster`, `DrunkDriver`, `HybridSystem`
+- **Strategy** — interface `Policy` avec `StandardDriving` comme comportement de base
+- **Decorator** — `PolicyDecorator` enveloppe `StandardDriving` ; `SoundBooster`, `DrunkDriver`, `HybridSystem` en héritent pour composer des comportements
 - **Factory** — `TrackFactory`, `Policy.build()`, `SoundPlayer.Factory`
-- **Template Method** — `AbstractObservableModel.fire()`
+- **Template Method** — `AbstractObservableModel.fire()`, `ObservingPanel.onModelEvent()` (filtrage des événements avant `refresh()`)
 - **Memento** — `History` avec snapshots par tick

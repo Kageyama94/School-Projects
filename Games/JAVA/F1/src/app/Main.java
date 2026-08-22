@@ -16,7 +16,7 @@ import view.*;
 
 public class Main {
     private static final SoundPlayer.Factory VROOM_FACTORY =
-        new SoundPlayer.Factory("/F1/assets/vrooom.wav");
+        new SoundPlayer.Factory("/assets/vrooom.wav");
 
     public static void main(String[] args) { SwingUtilities.invokeLater(Main::launch); }
 
@@ -26,7 +26,7 @@ public class Main {
         Track track = TrackFactory.circuit();
 
         SetupPanel decoPanel = new SetupPanel(names);
-        askDecorations(decoPanel, names.length);
+        askDecorations(decoPanel);
 
         List<Player> players = new ArrayList<>();
         for (int i = 0; i < names.length; i++) players.add(buildPlayer(i, configs.get(i), track, decoPanel));
@@ -36,10 +36,10 @@ public class Main {
         GameController controller = new GameController(game);
 
         new Frame(game, controller);
-        controller.pause();
+        controller.resume();
     }
 
-    private static void askDecorations(SetupPanel decoPanel, int carCount) {
+    private static void askDecorations(SetupPanel decoPanel) {
         while (true) {
             JOptionPane pane = new JOptionPane(
                 decoPanel,

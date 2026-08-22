@@ -25,13 +25,14 @@ public class TaskController {
     }
 
     public void applyTask(int row, int col, TaskType taskType) {
-        CharacterTask task = createTask(taskType);
-
         Rectangle cellRect = new Rectangle(col * CELL, row * CELL, CELL, CELL);
         for (GameCharacter character : characters) {
             if (!character.isVisible()) continue;
             Rectangle charRect = new Rectangle(character.getX(), character.getY(), CELL, CELL);
-            if (cellRect.intersects(charRect)) { character.setTask(task); break; }
+            if (cellRect.intersects(charRect)) {
+                if (character.getTask() == null) character.setTask(createTask(taskType));
+                break;
+            }
         }
     }
 }

@@ -7,7 +7,6 @@ public abstract class AbstractObservableModel implements ObservableModel {
     private final List<ModelListener> listeners = new ArrayList<>();
 
     @Override public void addListener(ModelListener l) { listeners.add(l); }
-    @Override public void removeListener(ModelListener l) { listeners.remove(l); }
     @Override public void notifyListeners(ModelEvent e) {
         for (var l : List.copyOf(listeners)) l.onModelEvent(e);
     }

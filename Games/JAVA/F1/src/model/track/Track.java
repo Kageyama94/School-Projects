@@ -17,7 +17,7 @@ public class Track {
         this.rows = rows;
         this.cols = cols;
         this.grid = grid;
-        this.road = road;
+        this.road = List.copyOf(road);
         this.startIndex = startIndex;
         this.finishIndex = finishIndex;
         this.turns = new HashMap<>(turns);
@@ -64,7 +64,6 @@ public class Track {
 
     public List<Cell> getRoad() { return road; }
     public int getStartIndex() { return startIndex; }
-    public int getFinishIndex() { return finishIndex; }
     public int rows() { return rows; }
     public int cols() { return cols; }
     public Type get(int r, int c) { return grid[r][c]; }

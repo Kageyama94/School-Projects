@@ -1,8 +1,9 @@
 package view;
 
 import java.awt.*;
-import java.util.EnumMap;
 import java.util.Map;
+
+import javax.swing.JLabel;
 
 import controller.GameController.ChangeSpeedError;
 
@@ -43,13 +44,22 @@ public final class ViewConfig {
     // === Titres de fenêtres / dialogues ===
     public static final String TITLE_ERROR = "Erreur";
 
-    // === Traductions des erreurs contrôleur ===
-    private static final Map<ChangeSpeedError, String> CHANGE_SPEED_MESSAGES = new EnumMap<>(ChangeSpeedError.class);
-    static {
-        CHANGE_SPEED_MESSAGES.put(ChangeSpeedError.DAMAGED, "Voiture endommagée !");
-        CHANGE_SPEED_MESSAGES.put(ChangeSpeedError.ALREADY_BOOSTED, "Déjà boostée !");
-        CHANGE_SPEED_MESSAGES.put(ChangeSpeedError.ALREADY_STOPPED, "Déjà arrêtée !");
-    }
- 
+    // === Erreurs de contrôleur ===
+    private static final Map<ChangeSpeedError, String> CHANGE_SPEED_MESSAGES = Map.of(
+        ChangeSpeedError.NOT_RUNNING, "La course n'est pas en cours !",
+        ChangeSpeedError.DAMAGED, "Voiture endommagée !",
+        ChangeSpeedError.ALREADY_BOOSTED, "Déjà boostée !",
+        ChangeSpeedError.ALREADY_STOPPED, "Déjà arrêtée !"
+    );
+
     public static String message(ChangeSpeedError err) { return CHANGE_SPEED_MESSAGES.get(err); }
+
+    // === Labels stylés ===
+    public static JLabel label(String text, int style, float size) {
+        JLabel l = new JLabel(text);
+        l.setForeground(TEXT);
+        l.setAlignmentX(Component.CENTER_ALIGNMENT);
+        l.setFont(l.getFont().deriveFont(style, size));
+        return l;
+    }
 }

@@ -70,17 +70,18 @@ public class Game extends AbstractObservableModel {
 
     public void resume() {
         if (state != State.PAUSED) return;
+        history.restoreToTip(this);
         setState(State.RUNNING);
     }
 
     private void finish() { setState(State.FINISHED); }
 
     private void setState(State newState) {
+        if (newState == state) return;
         if (newState == State.RUNNING && history.isEmpty()) history.record(this);
         state = newState;
         if (newState == State.RUNNING) ticker.start(); else ticker.stop();
-        fire(newState == State.FINISHED ? ModelEvent.Type.FINISHED
-                                            : ModelEvent.Type.STATE_CHANGED);
+        fire(newState == State.FINISHED ? ModelEvent.Type.FINISHED : ModelEvent.Type.STATE_CHANGED);
     }
 
     public void step(int delta) { history.step(this, delta); }

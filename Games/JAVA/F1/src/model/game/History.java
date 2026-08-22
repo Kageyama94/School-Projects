@@ -2,11 +2,12 @@ package model.game;
 
 import java.util.*;
 
+import model.GameConfig;
 import model.car.Car;
 import model.observer.ModelEvent;
 
 public class History {
-    private final List<Map<String, CarSnapshot>> snapshots = new ArrayList<>();
+    private final List<List<CarSnapshot>> snapshots = new ArrayList<>();
     private final List<Integer> ticksHistory = new ArrayList<>();
     private int historyPtr = -1;
 
@@ -20,25 +21,34 @@ public class History {
     }
 
     public void record(Game game) {
-        Map<String, CarSnapshot> snap = new HashMap<>();
-        for (Player p : game.getPlayers()) snap.put(p.getName(), CarSnapshot.of(p.getCar()));
+        List<CarSnapshot> snap = game.getPlayers().stream().map(p -> CarSnapshot.of(p.getCar())).toList();
         snapshots.add(snap);
         ticksHistory.add(game.getTicks());
         historyPtr = snapshots.size() - 1;
+
+        if (snapshots.size() > GameConfig.History.MAX_SNAPSHOTS) {
+            snapshots.remove(0);
+            ticksHistory.remove(0);
+            historyPtr--;
+        }
     }
 
     private void apply(Game game, int idx) {
-        Map<String, CarSnapshot> snap = snapshots.get(idx);
-        for (Player p : game.getPlayers()) {
-            CarSnapshot s = snap.get(p.getName());
-            if (s == null) continue;
-            p.getCar().restoreState(
+        List<CarSnapshot> snap = snapshots.get(idx);
+        List<Player> players = game.getPlayers();
+        for (int i = 0; i < players.size(); i++) {
+            CarSnapshot s = snap.get(i);
+            players.get(i).getCar().restoreState(
                 s.roadIndex(), s.fuel(), s.laps(),
                 s.state(), s.damage(), s.battery()
             );
         }
         game.restoreTicks(ticksHistory.get(idx));
         game.notifyListeners(new ModelEvent(ModelEvent.Type.TICK));
+    }
+
+    public void restoreToTip(Game game) {
+        if (!snapshots.isEmpty()) apply(game, snapshots.size() - 1);
     }
 
     private boolean canReplay(Game game) {

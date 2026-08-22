@@ -2,8 +2,7 @@ package model.car.policy;
 
 import model.car.Car;
 
-public class SoundBooster implements Policy {
-    private final Movement movement = new Movement();
+public class SoundBooster extends PolicyDecorator {
     private final Sound sound;
 
     public SoundBooster(Sound sound) { this.sound = sound; }

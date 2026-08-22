@@ -7,5 +7,4 @@ public class SelectionModel {
 
     public void select(TaskType task) { this.selectedTask = task; }
     public TaskType getSelected() { return selectedTask; }
-    public void clear() { this.selectedTask = null; }
 }

@@ -7,21 +7,20 @@ import model.characters.*;
 public class Carpenter implements CharacterTask {
     private int steps = 0;
     private static final int cell = GameConfig.CELL_SIZE;
-    private int lastCellX, lastObstacleY;
+    private final CellStepCounter stepCounter = new CellStepCounter();
+    private int lastObstacleY;
     private int buildDir;
 
     @Override
     public boolean update(GameCharacter character) {
-        if (character.getX() % cell != 0) return false;
+        if (!PhysicsHelper.isAlignedX(character)) return false;
 
         // Demi-tour (rebord atteint, blocker devant...) → on arrête
-        int curDir = (character.getDirection() > 0) ? 1 : -1;
+        int curDir = PhysicsHelper.directionSign(character);
         if (curDir != buildDir) return true;
 
-        int currentCellX = character.getX() / cell;
-        if (lastCellX != currentCellX) {
-            lastCellX = currentCellX;
-            int frontCellX = currentCellX + buildDir;
+        if (stepCounter.crossedCell(character)) {
+            int frontCellX = character.getX() / cell + buildDir;
             int targetY = lastObstacleY / cell;
 
             // Stop si bordure ou obstacle déjà présent
@@ -40,9 +39,9 @@ public class Carpenter implements CharacterTask {
 
     @Override
     public void onEnterState(GameCharacter character) {
-        this.lastCellX = character.getX() / cell;
+        stepCounter.reset(character);
         this.lastObstacleY = character.getY();
-        this.buildDir = (character.getDirection() > 0) ? 1 : -1;
+        this.buildDir = PhysicsHelper.directionSign(character);
     }
 
     @Override public TaskType getType() { return TaskType.CHARPENTIER; }
