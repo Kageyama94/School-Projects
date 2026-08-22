@@ -16,12 +16,18 @@ Les joueurs placent chacun leur tour un pion sur une case vide. Le premier à cr
 ## Lancer le jeu
 
 ```bash
-javac HexGame.java
-java HexGame
+javac Main.java
+java Main
+```
+
+Un argument optionnel permet de choisir la taille jouable du plateau (par défaut 9) :
+
+```bash
+java Main 13
 ```
 
 ## Fonctionnalités
 
-- Plateau 11×11 avec rendu hexagonal
-- Détection automatique de la victoire (DFS)
+- Plateau hexagonal de taille configurable, avec hexagones redimensionnés automatiquement selon la fenêtre
+- Détection automatique de la victoire (DFS) avec surbrillance du chemin gagnant
 - Option de rejouer en fin de partie
