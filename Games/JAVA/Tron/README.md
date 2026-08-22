@@ -12,8 +12,7 @@ Deux joueurs (ou une IA) se déplacent sur une grille et laissent une trace derr
 
 ## Aperçu
 
-![Sélection du mode](screenshots/menu.png)
-![Partie en cours](screenshots/gameplay.png)
+<img src="screenshots/gameplay.png" alt="Plateau" width="600">
 
 ---
 
