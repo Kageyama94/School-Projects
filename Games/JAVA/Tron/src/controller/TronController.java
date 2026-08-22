@@ -8,17 +8,32 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class TronController {
+    private static final int INITIAL_DELAY = 500;
+    private static final int MIN_DELAY = 150;
+    private static final int SPEEDUP_STEP = 30;
+    private static final int TICKS_PER_SPEEDUP = 15;
+
+    private static final int P1_UP = KeyEvent.VK_Z;
+    private static final int P1_DOWN = KeyEvent.VK_S;
+    private static final int P1_LEFT = KeyEvent.VK_Q;
+    private static final int P1_RIGHT = KeyEvent.VK_D;
+    private static final int P2_UP = KeyEvent.VK_UP;
+    private static final int P2_DOWN = KeyEvent.VK_DOWN;
+    private static final int P2_LEFT = KeyEvent.VK_LEFT;
+    private static final int P2_RIGHT = KeyEvent.VK_RIGHT;
+
     private final TronModel model;
     private final TronView view;
-    private final int mode;
+    private final GameMode mode;
     private Timer timer;
+    private int tickCount = 0;
 
-    public TronController(TronModel model, TronView view, int mode) {
+    public TronController(TronModel model, TronView view, GameMode mode) {
         this.model = model;
         this.view = view;
         this.mode = mode;
 
-        if (mode != 2) touch();
+        if (mode != GameMode.EVE) touch();
         loop();
     }
 
@@ -32,49 +47,48 @@ public class TronController {
                 boolean j2 = false;
 
                 switch (e.getKeyCode()) {
-                    case KeyEvent.VK_Z:
+                    case P1_UP:
                         dr = -1; j1 = true; break;
-                    case KeyEvent.VK_S:
+                    case P1_DOWN:
                         dr = 1; j1 = true; break;
-                    case KeyEvent.VK_Q:
+                    case P1_LEFT:
                         dc = -1; j1 = true; break;
-                    case KeyEvent.VK_D:
+                    case P1_RIGHT:
                         dc = 1; j1 = true; break;
-                    case KeyEvent.VK_UP:
+                    case P2_UP:
                         dr = -1; j2 = true; break;
-                    case KeyEvent.VK_DOWN:
+                    case P2_DOWN:
                         dr = 1; j2 = true; break;
-                    case KeyEvent.VK_LEFT:
+                    case P2_LEFT:
                         dc = -1; j2 = true; break;
-                    case KeyEvent.VK_RIGHT:
+                    case P2_RIGHT:
                         dc = 1; j2 = true; break;
                     default:
                         return;
                 }
 
                 if (j1) model.changeDirection(1, dr, dc);
-                if (mode == 0 && j2) model.changeDirection(2, dr, dc);
+                if (mode == GameMode.PVP && j2) model.changeDirection(2, dr, dc);
             }
         });
         view.setFocusable(true);
-        view.requestFocus();
+        view.requestFocusInWindow();
     }
 
     private void loop() {
-        timer = new Timer(500, e -> {
-            boolean alive1 = true;
-            boolean alive2 = true;
-
-            if (mode == 0) {
-                alive1 = model.advancePlayer(1);
-                alive2 = model.advancePlayer(2);
-            } else if (mode == 1) {
-                alive1 = model.advancePlayer(1);
-                alive2 = model.advanceIA(2, true);
-            } else if (mode == 2) {
-                alive1 = model.advanceIA(1, false);
-                alive2 = model.advanceIA(2, false);
+        timer = new Timer(INITIAL_DELAY, e -> {
+            tickCount++;
+            if (tickCount % TICKS_PER_SPEEDUP == 0) {
+                timer.setDelay(Math.max(MIN_DELAY, timer.getDelay() - SPEEDUP_STEP));
             }
+
+            boolean[] result;
+            if (mode == GameMode.PVP) result = model.step(false, false, false, false);
+            else if (mode == GameMode.PVE) result = model.step(false, false, true, true);
+            else result = model.step(true, false, true, false);
+
+            boolean alive1 = result[0];
+            boolean alive2 = result[1];
 
             if (!alive1 && !alive2) model.setGameOver("Égalité !");
             else if (!alive1) model.setGameOver("Le joueur BLEU gagne !");
@@ -84,9 +98,18 @@ public class TronController {
 
             if (model.isGameOver()) {
                 timer.stop();
-                view.showEndMessage(model.getMessageFin());
+                if (view.askReplay(model.getMessageFin())) restart();
             }
         });
+        timer.start();
+    }
+
+    private void restart() {
+        model.initialise();
+        tickCount = 0;
+        timer.setDelay(INITIAL_DELAY);
+        view.refresh();
+        if (mode != GameMode.EVE) view.requestFocusInWindow();
         timer.start();
     }
 }
