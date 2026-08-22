@@ -4,7 +4,7 @@ Implémentation du jeu de société **Hex** en Java avec une interface graphique
 
 ## Règles du jeu
 
-Le Hex se joue sur un plateau de 11×11 cases hexagonales entre deux joueurs :
+Le Hex se joue sur un plateau hexagonal entre deux joueurs (9×9 par défaut, taille configurable) :
 
 - **Rouge** doit relier le bord **gauche** au bord **droit**
 - **Bleu** doit relier le bord **haut** au bord **bas**
