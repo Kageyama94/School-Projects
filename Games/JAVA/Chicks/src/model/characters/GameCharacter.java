@@ -1,7 +1,5 @@
 package model.characters;
 
-import java.util.ArrayList;
-
 import model.characters.states.*;
 import model.characters.tasks.CharacterTask;
 import model.environment.*;
@@ -9,13 +7,13 @@ import model.environment.*;
 public class GameCharacter {
     private int x, y;
     private final Obstacle obstacle;
-    public static final int cell = GameConfig.CELL_SIZE;
+    private static final int cell = GameConfig.CELL_SIZE;
     private CharacterState state;
     private CharacterTask task;
     private boolean isVisible = false;
     private int direction = GameConfig.WALK_SPEED;
     private int fallDistance, jumpDistance;
-    private ArrayList<CharacterObserver> observers = new ArrayList<>();
+    private CharacterObserver observer;
     private boolean isDone = false;
     private boolean shouldDie = false;
     private final Portal portal;
@@ -29,12 +27,11 @@ public class GameCharacter {
         this.frameWidth = frameWidth;
     }
 
-    public void addObserver(CharacterObserver observer) { if (!observers.contains(observer)) observers.add(observer); }
-    public void removeObserver(CharacterObserver observer) { observers.remove(observer); }
+    public void setObserver(CharacterObserver observer) { this.observer = observer; }
     public void notifyObserver(boolean hasReachedExit, boolean isDead) {
         if (isDone) return;
         isDone = true;
-        for (CharacterObserver observer : observers) observer.onCharacterEnd(hasReachedExit, isDead);
+        if (observer != null) observer.onCharacterEnd(hasReachedExit, isDead);
     }
 
     public boolean isVisible() { return isVisible; }
@@ -53,19 +50,18 @@ public class GameCharacter {
     public CharacterTask getTask() { return task; }
 
     public void update() {
+        if (!isVisible) return;
         if (task != null) {
             boolean done = task.update(this);
             if (done) setTask(null);
         }
-        if (isVisible) {
-            if (state != null) state.update(this);
-            checkEndCondition();
-        }
+        if (state != null) state.update(this);
+        checkEndCondition();
     }
 
     public void markForDeath() { this.shouldDie = true; }
 
-    public void checkEndCondition() {
+    private void checkEndCondition() {
         boolean atLava = obstacle.isAtLava(x / cell, y / cell);
         boolean atExit = portal.isAtExit(x / cell, y / cell);
         if (atLava || atExit || shouldDie) {

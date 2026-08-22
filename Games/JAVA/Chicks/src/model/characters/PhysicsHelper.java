@@ -21,4 +21,10 @@ public final class PhysicsHelper {
             && !c.getObstacle().isCollision(front, (c.getY() - 1) / GameConfig.CELL_SIZE)
             && !c.getObstacle().isCollision(c.getX() / GameConfig.CELL_SIZE, (c.getY() - 1) / GameConfig.CELL_SIZE);
     }
+
+    public static boolean isAlignedX(GameCharacter c) { return c.getX() % GameConfig.CELL_SIZE == 0; }
+    public static boolean isAlignedY(GameCharacter c) { return c.getY() % GameConfig.CELL_SIZE == 0; }
+    public static boolean isAligned(GameCharacter c) { return isAlignedX(c) && isAlignedY(c); }
+
+    public static int directionSign(GameCharacter c) { return c.getDirection() > 0 ? 1 : -1; }
 }

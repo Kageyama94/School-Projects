@@ -13,7 +13,7 @@ public class GameView extends JComponent {
     private final Renderer renderer = new Renderer();
 
     private GameState lastState = null;
-    private Obstacle obstacle   = null;
+    private Obstacle obstacle = null;
     private int activeRow = -1;
     private int activeCol = -1;
 
@@ -40,6 +40,8 @@ public class GameView extends JComponent {
             removeMouseListener(inputController);
             removeMouseMotionListener(inputController);
         }
+        activeRow = -1;
+        activeCol = -1;
     }
 
     public void setInputController(InputController ic) {

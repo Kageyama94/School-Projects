@@ -13,7 +13,7 @@ public class Obstacle {
 
     public void buildLevel(int cols, int rows) {
         int centerY = rows / 2;
-        int centerX = cols  / 2;
+        int centerX = cols / 2;
         for (int i = 0; i < cols; i++) {
             for (int j = 0; j < rows; j++) {
                 if (j >= rows - 2)
@@ -26,7 +26,10 @@ public class Obstacle {
 
     public void addObstacle(int x, int y) { cells.put(new Point(x, y), CellType.WALL); }
     public void addBlocker(int x, int y) { cells.put(new Point(x, y), CellType.BLOCKER); }
-    public void removeObstacle(int x, int y) { cells.remove(new Point(x, y)); }
+    public void removeObstacle(int x, int y) {
+        Point p = new Point(x, y);
+        if (cells.get(p) != CellType.LAVA) cells.remove(p);
+    }
 
     public boolean isCollision(int x, int y) {
         CellType t = cells.get(new Point(x, y));

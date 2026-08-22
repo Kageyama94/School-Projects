@@ -2,8 +2,7 @@ package model.car.policy;
 
 import model.car.Car;
 
-public class DrunkDriver implements Policy {
-    private final Movement movement = new Movement();
+public class DrunkDriver extends PolicyDecorator {
     private boolean forward = true;
 
     @Override

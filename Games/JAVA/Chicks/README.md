@@ -56,7 +56,7 @@ src/
 │   │   ├── GameCharacter.java     # Entité personnage (position, état, tâche)
 │   │   ├── CharacterObserver.java # Interface observer (mort / sortie)
 │   │   ├── PhysicsHelper.java     # Utilitaires physique (support, saut...)
-│   │   ├── Constants.java         # Constantes globales (taille cellule, gravité...)
+│   │   ├── GameConfig.java        # Constantes globales (taille cellule, gravité...)
 │   │   ├── states/                # Pattern State
 │   │   │   ├── CharacterState.java
 │   │   │   ├── Walking.java
@@ -65,6 +65,7 @@ src/
 │   │   └── tasks/                 # Pattern Strategy
 │   │       ├── CharacterTask.java
 │   │       ├── TaskType.java
+│   │       ├── CellStepCounter.java # Détection de passage de case (Bombeur, Charpentier)
 │   │       ├── Blocker.java
 │   │       ├── Bomber.java
 │   │       ├── Carpenter.java
@@ -98,7 +99,7 @@ src/
 ## Prérequis & lancement
 
 **Prérequis**
-- Java 17 ou supérieur
+- Java 21 ou supérieur
 
 **Compilation**
 ```bash

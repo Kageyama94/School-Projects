@@ -39,10 +39,9 @@ public class SoundPlayer implements Sound {
 
         public SoundPlayer create() {
             if (data == null) return new SoundPlayer(null);
-            try {
+            try (InputStream bytes = new ByteArrayInputStream(data);
+                AudioInputStream ais = new AudioInputStream(bytes, format, data.length / format.getFrameSize())) {
                 Clip c = AudioSystem.getClip();
-                InputStream bytes = new ByteArrayInputStream(data);
-                AudioInputStream ais = new AudioInputStream(bytes, format, data.length / format.getFrameSize());
                 c.open(ais);
                 return new SoundPlayer(c);
             } catch (IOException | LineUnavailableException e) {

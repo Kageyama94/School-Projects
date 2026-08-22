@@ -4,12 +4,14 @@ import model.car.Car;
 import model.game.*;
 
 public class GameController {
-    public enum ChangeSpeedError { DAMAGED, ALREADY_BOOSTED, ALREADY_STOPPED }
+    public enum ChangeSpeedError { NOT_RUNNING, DAMAGED, ALREADY_BOOSTED, ALREADY_STOPPED }
     private final Game game;
 
     public GameController(Game game) { this.game = game; }
 
     public ChangeSpeedError changeSpeed(Player player, int delta) {
+        if (game.getState() != Game.State.RUNNING) return ChangeSpeedError.NOT_RUNNING;
+
         Car car = player.getCar();
         Car.State state = car.getState();
         if (state == Car.State.DAMAGED) return ChangeSpeedError.DAMAGED;
@@ -29,9 +31,9 @@ public class GameController {
         return switch (current) {
             case DAMAGED -> null;
             case STOPPED -> up ? Car.State.LOW : null;
-            case LOW     -> up ? Car.State.NORMAL : Car.State.STOPPED;
-            case NORMAL  -> up ? Car.State.BOOST : Car.State.LOW;
-            case BOOST   -> up ? null : Car.State.NORMAL;
+            case LOW -> up ? Car.State.NORMAL : Car.State.STOPPED;
+            case NORMAL -> up ? Car.State.BOOST : Car.State.LOW;
+            case BOOST -> up ? null : Car.State.NORMAL;
         };
     }
 

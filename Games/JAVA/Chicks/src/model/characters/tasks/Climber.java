@@ -15,7 +15,7 @@ public class Climber implements CharacterTask {
         boolean wallAhead = character.getObstacle().isCollision(frontX, currentY);
 
         if (!climbing) {
-            if (wallAhead && character.getX() % cell == 0) {
+            if (wallAhead && PhysicsHelper.isAlignedX(character)) {
                 climbing = true;
                 character.setState(null);
             } else return false;
@@ -25,7 +25,7 @@ public class Climber implements CharacterTask {
             character.setState(new Falling()); return true;
         }
         if (wallAhead) { climb(character); return false; }
-        if (character.getY() % cell != 0) { climb(character); return false; }
+        if (!PhysicsHelper.isAlignedY(character)) { climb(character); return false; }
         character.setX(character.getX() + character.getDirection());
         character.setState(new Walking());
         return true;

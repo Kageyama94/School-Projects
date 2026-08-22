@@ -28,6 +28,7 @@ public class TickProcessor {
         Car.State s = c.getState();
         if (fuel < GameConfig.Fuel.CONSUMPTION_BOOST && s == Car.State.BOOST) c.setState(Car.State.NORMAL);
         else if (fuel < GameConfig.Fuel.CONSUMPTION_NORMAL && s == Car.State.NORMAL) c.setState(Car.State.LOW);
+        else if (fuel <= 0 && s == Car.State.LOW) c.setState(Car.State.STOPPED);
     }
  
     private void consumeFuel(Car c) {

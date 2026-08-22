@@ -18,8 +18,6 @@ public class Portal {
 
     public int getEntryX() { return entryX; }
     public int getEntryY() { return entryY; }
-    public int getExitX() { return exitX; }
-    public int getExitY() { return exitY; }
 
     public void draw(Graphics g) {
         drawPortal(g, entryX, entryY, Color.WHITE, true);
@@ -28,7 +26,7 @@ public class Portal {
 
     private void drawPortal(Graphics g, int x, int y, Color color, boolean pointsUp) {
         g.setColor(color);
-        int tip  = pointsUp ? y + cell : y;
+        int tip = pointsUp ? y + cell : y;
         int base = pointsUp ? y : y + cell;
         int[] xPoints = { x + cell / 2, x, x + cell };
         int[] yPoints = { tip, base, base };

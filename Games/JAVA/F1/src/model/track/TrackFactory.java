@@ -19,6 +19,23 @@ public class TrackFactory {
     );
     private static final int[] TURN_LIMITS = { 5, 3, 2, 2, 2, 2, 5 };
 
+    static {
+        int intermediatePoints = CONTROL_POINTS.size() - 2;
+        if (TURN_LIMITS.length != intermediatePoints) {
+            throw new IllegalStateException(
+                "TURN_LIMITS (" + TURN_LIMITS.length + ") doit avoir exactement une entrée "
+                + "par virage intermédiaire de CONTROL_POINTS (" + intermediatePoints + ")");
+        }
+        for (int i = 0; i < CONTROL_POINTS.size() - 1; i++) {
+            Cell a = CONTROL_POINTS.get(i), b = CONTROL_POINTS.get(i + 1);
+            if (a.row() != b.row() && a.col() != b.col()) {
+                throw new IllegalStateException(
+                    "CONTROL_POINTS[" + i + "]=" + a + " et [" + (i + 1) + "]=" + b
+                    + " doivent partager une ligne ou une colonne (segment non aligné)");
+            }
+        }
+    }
+
     public static Track circuit() {
         int rows = GameConfig.Track.ROWS;
         int cols = GameConfig.Track.COLS;

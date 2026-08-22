@@ -7,12 +7,13 @@ import javax.swing.*;
 import model.game.*;
 import model.observer.*;
 
-public class LeaderboardPanel extends JPanel implements ModelListener {
+public class LeaderboardPanel extends ObservingPanel {
     private final Game game;
     private final JLabel tickLabel = titleLabel("", Font.ITALIC);
     private final JPanel rankingPanel = new JPanel();
 
     public LeaderboardPanel(Game game) {
+        super(ModelEvent.Type.TICK, ModelEvent.Type.LAP_CHANGED, ModelEvent.Type.POSITION_CHANGED);
         this.game = game;
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -30,16 +31,11 @@ public class LeaderboardPanel extends JPanel implements ModelListener {
         refresh();
     }
 
-    private static JLabel titleLabel(String text, int style) {
-        JLabel l = new JLabel(text);
-        l.setForeground(ViewConfig.TEXT);
-        l.setFont(l.getFont().deriveFont(style, ViewConfig.FONT_TITLE));
-        l.setAlignmentX(Component.CENTER_ALIGNMENT);
-        return l;
-    }
+    private static JLabel titleLabel(String text, int style) { return ViewConfig.label(text, style, ViewConfig.FONT_TITLE); }
 
-    private void refresh() {
-        tickLabel.setText("Tick : " + game.getTicks() + " ms");
+    @Override
+    protected void refresh() {
+        tickLabel.setText("Tick : " + game.getTicks());
 
         List<Player> ranking = game.getRanking();
         rankingPanel.removeAll();
@@ -65,13 +61,5 @@ public class LeaderboardPanel extends JPanel implements ModelListener {
             case 3 -> ViewConfig.BRONZE;
             default -> ViewConfig.TEXT;
         };
-    }
-
-    @Override
-    public void onModelEvent(ModelEvent e) {
-        switch (e.type()) {
-            case TICK, LAP_CHANGED, POSITION_CHANGED -> refresh();
-            default -> {}
-        }
     }
 }

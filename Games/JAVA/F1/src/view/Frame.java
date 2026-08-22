@@ -26,7 +26,7 @@ public class Frame extends JFrame {
     }
 
     private JPanel gameWithOverlay(Game game, GameController controller) {
-        GamePanel gamePanel  = new GamePanel(game);
+        GamePanel gamePanel = new GamePanel(game);
         ControlPanel controls = new ControlPanel(controller);
         controls.setOpaque(false);
  

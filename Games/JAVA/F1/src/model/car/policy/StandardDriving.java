@@ -5,7 +5,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import model.GameConfig;
 import model.car.Car;
 
-public class Movement implements Policy {
+public class StandardDriving implements Policy {
     @Override
     public int rollSteps(Car.State state) {
         return switch (state) {

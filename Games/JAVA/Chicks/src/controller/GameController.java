@@ -12,10 +12,6 @@ import model.environment.*;
 import view.GameView;
 
 public class GameController implements CharacterObserver {
-    private static final int TOTAL_CHARACTERS = 100;
-    private static final int GAME_TICK_MS = 10;
-    private static final int APPEARANCE_DELAY_MS = 1000;
-
     private final GameView view;
     private final TaskController taskController;
     private final Obstacle obstacle = new Obstacle();
@@ -51,15 +47,15 @@ public class GameController implements CharacterObserver {
 
     private void initModel(int frameWidth, int frameHeight) {
         obstacle.buildLevel(frameWidth / GameConfig.CELL_SIZE, frameHeight / GameConfig.CELL_SIZE);
-        for (int i = 0; i < TOTAL_CHARACTERS; i++) {
+        for (int i = 0; i < GameConfig.TOTAL_CHARACTERS; i++) {
             GameCharacter c = new GameCharacter(portal.getEntryX(), portal.getEntryY(), obstacle, portal, frameWidth);
-            c.addObserver(this);
+            c.setObserver(this);
             characters.add(c);
         }
     }
 
     private void startGameLoop() {
-        gameTimer = new Timer(GAME_TICK_MS, e -> {
+        gameTimer = new Timer(GameConfig.GAME_TICK_MS, e -> {
             characters.forEach(GameCharacter::update);
             view.render(buildState());
         });
@@ -67,7 +63,7 @@ public class GameController implements CharacterObserver {
     }
 
     private void startAppearanceTimer() {
-        appearanceTimer = new Timer(APPEARANCE_DELAY_MS, e -> {
+        appearanceTimer = new Timer(GameConfig.APPEARANCE_DELAY_MS, e -> {
             if (characterIndex >= characters.size()) { appearanceTimer.stop(); return; }
             characters.get(characterIndex).setVisible(true);
             characterIndex++;
@@ -90,7 +86,7 @@ public class GameController implements CharacterObserver {
         if (hasReachedExit) charactersAtExit++;
         else if (isDead) deadCharacters++;
         view.render(buildState());
-        if (visibleCount() == 0 && characterIndex >= TOTAL_CHARACTERS) endGame(charactersAtExit > 0);
+        if (visibleCount() == 0 && characterIndex >= GameConfig.TOTAL_CHARACTERS) endGame(charactersAtExit > 0);
     }
 
     public void onMouseMoved(int row, int col) { view.setActiveCell(row, col); }
@@ -109,7 +105,7 @@ public class GameController implements CharacterObserver {
             .map(c -> new CharacterSnapshot(c.getX(), c.getY(), c.getTask() != null ? c.getTask().getType() : null))
             .toList();
         return new GameState(
-            TOTAL_CHARACTERS, (int) visibleCount(),
+            GameConfig.TOTAL_CHARACTERS, (int) visibleCount(),
             charactersAtExit, deadCharacters,
             gameEnded, win, snapshots);
     }

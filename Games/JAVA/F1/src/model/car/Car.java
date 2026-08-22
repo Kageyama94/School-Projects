@@ -81,7 +81,7 @@ public class Car extends AbstractObservableModel {
     public boolean isOnBattery() { return energy != null && energy.isActive(); }
     public int getBatteryLevel() { return energy != null ? energy.getLevel() : -1; }
     public void brake() {
-        if(isOnBattery()) {
+        if (energy != null) {
             energy.recharge();
             fire(ModelEvent.Type.FUEL_CHANGED);
         }
@@ -92,10 +92,8 @@ public class Car extends AbstractObservableModel {
         fire(ModelEvent.Type.FUEL_CHANGED);
     }
     public boolean isOutOfFuel() { return fuel <= 0 && !isOnBattery(); }
-    public boolean justLapped() { return lastTickLapped; }
 
     public Color getColor() { return color; }
-    public Policy getPolicy() { return policy; }
     public Track getTrack() { return track; }
     public int getFuel() { return fuel; }
     public int getLaps() { return laps; }

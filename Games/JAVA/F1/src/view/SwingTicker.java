@@ -10,5 +10,5 @@ public class SwingTicker implements Ticker {
     public SwingTicker(int millis, Runnable onTick) { this.timer = new Timer(millis, _ -> onTick.run()); }
  
     @Override public void start() { timer.start(); }
-    @Override public void stop()  { timer.stop();  }
+    @Override public void stop() { timer.stop(); }
 }

@@ -1,6 +1,6 @@
 package model.game;
 
-public interface  Ticker {
+public interface Ticker {
     void start();
     void stop();
 }

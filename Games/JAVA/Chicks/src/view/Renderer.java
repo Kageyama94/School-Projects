@@ -33,7 +33,11 @@ public class Renderer {
                 case BLOQUEUR -> new Color(0x1a, 0x1a, 0x4e);
                 case PARACHUTISTE -> Color.CYAN;
                 case BOMBEUR -> Color.ORANGE;
-                case null, default -> Color.YELLOW;
+                case CHARPENTIER -> new Color(0x8b, 0x45, 0x13);
+                case GRIMPEUR -> Color.MAGENTA;
+                case FOREUR -> Color.PINK;
+                case TUNNELIER -> Color.GRAY;
+                case null -> Color.YELLOW;
             };
             g.setColor(color);
             g.fillOval(snap.x(), snap.y(), CELL, CELL);
@@ -49,7 +53,7 @@ public class Renderer {
         g.drawString("Poussins morts : " + state.deadCharacters(), 10, 80);
     }
 
-    public void drawCellCursor(Graphics g, int row, int col) {
+    private void drawCellCursor(Graphics g, int row, int col) {
         int x = col * CELL, y = row * CELL;
         g.setColor(Color.BLACK);
         for (int i = 0; i < 2; i++) {

@@ -10,10 +10,10 @@ public class Falling implements CharacterState {
     public void setGravity(int gravity) { this.gravity = gravity; }
     
     @Override
-    public void update(GameCharacter character) {  
+    public void update(GameCharacter character) {
         int fallDistance = character.getFallDistance();
         if (PhysicsHelper.hasSupport(character)) {
-            if ((fallDistance / cell) >= 5 && !(character.getTask() instanceof Parachutist)) {
+            if ((fallDistance / cell) >= GameConfig.MAX_FALL_CELLS && !(character.getTask() instanceof Parachutist)) {
                 character.markForDeath(); return;
             }
             character.setState(new Walking());

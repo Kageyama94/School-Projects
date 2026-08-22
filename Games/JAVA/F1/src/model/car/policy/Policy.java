@@ -10,7 +10,7 @@ public interface Policy {
     default Optional<EnergySource> energySource() { return Optional.empty(); }
 
     static Policy build(CarOption option, Supplier<Sound> soundFactory) {
-        if (option == null) return new Movement();
+        if (option == null) return new StandardDriving();
         return switch (option) {
             case SOUND -> new SoundBooster(soundFactory.get());
             case DRUNK -> new DrunkDriver();
