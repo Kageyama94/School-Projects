@@ -24,12 +24,14 @@ public class TronView extends JFrame {
 
     public void refresh() { boardPanel.repaint(); }
 
-    public void showEndMessage(String message) {
-        JOptionPane.showMessageDialog(
+    public boolean askReplay(String message) {
+        int result = JOptionPane.showConfirmDialog(
             this,
-            message,
+            message + "\n\nRejouer ?",
             "Fin de partie",
+            JOptionPane.YES_NO_OPTION,
             JOptionPane.INFORMATION_MESSAGE
         );
+        return result == JOptionPane.YES_OPTION;
     }
 }
