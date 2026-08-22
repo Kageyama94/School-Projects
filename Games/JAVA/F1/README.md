@@ -8,8 +8,7 @@ Un jeu de course développé en Java avec une architecture **MVC**, une interfac
 
 F1 simule une course entre trois voitures sur un circuit paramétrable. Chaque voiture possède une politique de déplacement configurable (son, conduite ivre, hybride). Le jeu tourne par *ticks* réguliers et offre une interface graphique complète avec tableau de bord, classement en direct et historique rejouable.
 
-![Setup](screenshots/menu.png)
-![Jeu](screenshots/gameplay.png)
+<img src="screenshots/gameplay.png" alt="Plateau" width="600">
 
 ---
 
