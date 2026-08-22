@@ -3,6 +3,7 @@ package controller;
 import model.*;
 import view.OthelloView;
 
+import javax.swing.SwingWorker;
 import java.awt.event.*;
 import java.util.List;
 
@@ -15,8 +16,8 @@ public class OthelloController {
 
     public OthelloController(OthelloModel model, OthelloView view, GameMode mode) {
         this.model = model;
-        this.view  = view;
-        this.mode  = mode;
+        this.view = view;
+        this.mode = mode;
 
         view.addBoardMouseListener(new BoardMouseListener());
         refreshView();
@@ -84,8 +85,31 @@ public class OthelloController {
     private void playAIThenAnimate() {
         Piece aiColor = Piece.WHITE;
         animationInProgress = true;
-        playAI();
-        animateThenRefresh(aiColor);
+
+        int black = model.countPieces(Piece.BLACK);
+        int white = model.countPieces(Piece.WHITE);
+        view.setValidMoves(null);
+        view.setStatus("<html><div style='text-align:center;'>Noir: " + black +
+                " | Blanc: " + white + "<br>L'IA réfléchit...</div></html>");
+
+        new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() {
+                playAI();
+                return null;
+            }
+            @Override
+            protected void done() {
+                try {
+                    get();
+                } catch (Exception ex) {
+                    animationInProgress = false;
+                    view.showMessage("Erreur inattendue pendant le calcul de l'IA : " + ex.getCause());
+                    return;
+                }
+                animateThenRefresh(aiColor);
+            }
+        }.execute();
     }
 
     private boolean isVsAI() { return mode == GameMode.HUMAN_VS_RANDOM_AI || mode == GameMode.HUMAN_VS_MINIMAX_AI; }

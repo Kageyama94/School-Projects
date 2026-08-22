@@ -3,7 +3,7 @@ package model;
 import java.util.List;
 
 public class OthelloAI {
-    private static final int DEFAULT_DEPTH = 6;
+    public static final int DEFAULT_DEPTH = 6;
 
     private static final int[][] POSITION_WEIGHTS = {
         { 100, -20,  10,   5,   5,  10, -20, 100 },
@@ -78,6 +78,17 @@ public class OthelloAI {
             return minEval;
         }
     }
+    
+    private int positionWeight(Piece[][] board, int row, int col) {
+        int base = POSITION_WEIGHTS[row][col];
+        if (base >= 0) return base;
+
+        int cornerRow = (row < OthelloModel.SIZE / 2) ? 0 : OthelloModel.SIZE - 1;
+        int cornerCol = (col < OthelloModel.SIZE / 2) ? 0 : OthelloModel.SIZE - 1;
+        if (board[cornerRow][cornerCol] != Piece.EMPTY) return 0;
+
+        return base;
+    }
 
     private int evaluate(Piece[][] board, Piece aiPlayer) {
         Piece opponent = aiPlayer.opposite();
@@ -86,8 +97,8 @@ public class OthelloAI {
         int aiCount = 0, opCount = 0;
         for (int r = 0; r < OthelloModel.SIZE; r++) {
             for (int c = 0; c < OthelloModel.SIZE; c++) {
-                if (board[r][c] == aiPlayer) { posScore += POSITION_WEIGHTS[r][c]; aiCount++; }
-                else if (board[r][c] == opponent) { posScore -= POSITION_WEIGHTS[r][c]; opCount++; }
+                if (board[r][c] == aiPlayer) { posScore += positionWeight(board, r, c); aiCount++; }
+                else if (board[r][c] == opponent) { posScore -= positionWeight(board, r, c); opCount++; }
             }
         }
 
@@ -116,16 +127,13 @@ public class OthelloAI {
         next[row][col] = player;
         Piece opponent = player.opposite();
 
-        int[] dx = {-1, -1, -1, 0, 0, 1, 1, 1};
-        int[] dy = {-1,  0,  1, -1, 1, -1, 0, 1};
-
         for (int d = 0; d < 8; d++) {
-            int x = row + dx[d], y = col + dy[d];
+            int x = row + Directions.DX[d], y = col + Directions.DY[d];
             java.util.List<int[]> toFlip = new java.util.ArrayList<>();
 
             while (x >= 0 && x < size && y >= 0 && y < size && next[x][y] == opponent) {
                 toFlip.add(new int[]{x, y});
-                x += dx[d]; y += dy[d];
+                x += Directions.DX[d]; y += Directions.DY[d];
             }
 
             if (x >= 0 && x < size && y >= 0 && y < size && next[x][y] == player) {

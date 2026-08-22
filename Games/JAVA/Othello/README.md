@@ -12,7 +12,7 @@ Un jeu d'Othello (Reversi) entièrement jouable, développé en Java avec une ar
 - **Trois modes de jeu** au choix au démarrage :
   - Humain vs Humain
   - Humain vs IA aléatoire
-  - Humain vs IA Minimax (profondeur 6, avec élagage alpha-bêta)
+  - Humain vs IA Minimax (3 niveaux de difficulté : Facile, Moyen, Difficile — élagage alpha-bêta)
 - **Animations** de retournement des pièces
 - **Affichage des coups valides** pour le joueur humain
 - **Gestion automatique du passe-tour** si un joueur n'a aucun coup disponible
@@ -32,7 +32,8 @@ src/
 ├── model/
 │   ├── OthelloModel.java       # Logique du jeu (plateau, règles, tour)
 │   ├── OthelloAI.java          # IA Minimax avec alpha-bêta
-│   └── Piece.java              # Enum BLACK / WHITE / EMPTY
+│   ├── Piece.java              # Enum BLACK / WHITE / EMPTY
+│   └── Directions.java         # Vecteurs de direction partagés (8 directions)
 └── view/
     ├── OthelloView.java        # Fenêtre principale (JFrame)
     └── BoardPanel.java         # Rendu du plateau et animations
@@ -54,9 +55,9 @@ src/
 
 L'IA Minimax (`OthelloAI`) utilise :
 
-- **Minimax** récursif avec **élagage alpha-bêta** (profondeur par défaut : 6)
+- **Minimax** récursif avec **élagage alpha-bêta** (profondeur choisie en jeu : Facile = 2, Moyen = 6, Difficile = 8)
 - **Fonction d'évaluation** composite :
-- *Pondération positionnelle* (coins = +100, cases adjacentes aux coins = −20/−50…)
+- *Pondération positionnelle* (coins = +100, cases adjacentes aux coins = −20/−50, sauf si le coin correspondant est déjà occupé — le risque a disparu)
 - *Mobilité* (différence de coups disponibles entre les deux joueurs)
 - *Parité* (différence de pièces, avec poids croissant en fin de partie)
 

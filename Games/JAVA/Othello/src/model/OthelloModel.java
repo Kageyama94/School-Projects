@@ -12,10 +12,12 @@ public class OthelloModel {
 
     private List<int[]> lastFlipped = new ArrayList<>();
 
-    public OthelloModel() {
+    public OthelloModel() { this(OthelloAI.DEFAULT_DEPTH); }
+
+    public OthelloModel(int aiDepth) {
         board = new Piece[SIZE][SIZE];
         random = new Random();
-        ai = new OthelloAI();
+        ai = new OthelloAI(aiDepth);
         resetGame();
     }
 
@@ -43,13 +45,11 @@ public class OthelloModel {
         if (!isInside(row, col) || board[row][col] != Piece.EMPTY) return false;
 
         Piece opponent = player.opposite();
-        int[] dx = {-1, -1, -1, 0, 0, 1, 1, 1};
-        int[] dy = {-1,  0,  1, -1, 1, -1, 0, 1};
 
         for (int d = 0; d < 8; d++) {
-            int x = row + dx[d], y = col + dy[d];
+            int x = row + Directions.DX[d], y = col + Directions.DY[d];
             boolean foundOpponent = false;
-            while (isInside(x, y) && board[x][y] == opponent) { x += dx[d]; y += dy[d]; foundOpponent = true; }
+            while (isInside(x, y) && board[x][y] == opponent) { x += Directions.DX[d]; y += Directions.DY[d]; foundOpponent = true; }
             if (foundOpponent && isInside(x, y) && board[x][y] == player) return true;
         }
         return false;
@@ -61,25 +61,22 @@ public class OthelloModel {
         board[row][col] = currentPlayer;
         lastFlipped = flipPieces(row, col, currentPlayer);
 
-        Piece nextPlayer = currentPlayer.opposite();
-        if (hasValidMove(nextPlayer)) currentPlayer = nextPlayer;
+        currentPlayer = currentPlayer.opposite();
 
         return true;
     }
 
     private List<int[]> flipPieces(int row, int col, Piece player) {
         Piece opponent = player.opposite();
-        int[] dx = {-1, -1, -1, 0, 0, 1, 1, 1};
-        int[] dy = {-1,  0,  1, -1, 1, -1, 0, 1};
         List<int[]> allFlipped = new ArrayList<>();
 
         for (int d = 0; d < 8; d++) {
-            int x = row + dx[d], y = col + dy[d];
+            int x = row + Directions.DX[d], y = col + Directions.DY[d];
             List<int[]> toFlip = new ArrayList<>();
 
             while (isInside(x, y) && board[x][y] == opponent) {
                 toFlip.add(new int[]{x, y});
-                x += dx[d]; y += dy[d];
+                x += Directions.DX[d]; y += Directions.DY[d];
             }
 
             if (isInside(x, y) && board[x][y] == player) {
@@ -102,18 +99,16 @@ public class OthelloModel {
     public static List<int[]> staticGetValidMoves(Piece[][] board, Piece player) {
         List<int[]> validMoves = new ArrayList<>();
         Piece opponent = player.opposite();
-        int[] dx = {-1, -1, -1, 0, 0, 1, 1, 1};
-        int[] dy = {-1,  0,  1, -1, 1, -1, 0, 1};
 
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
                 if (board[i][j] != Piece.EMPTY) continue;
                 outer:
                 for (int d = 0; d < 8; d++) {
-                    int x = i + dx[d], y = j + dy[d];
+                    int x = i + Directions.DX[d], y = j + Directions.DY[d];
                     boolean foundOpponent = false;
                     while (x >= 0 && x < SIZE && y >= 0 && y < SIZE && board[x][y] == opponent) {
-                        x += dx[d]; y += dy[d]; foundOpponent = true;
+                        x += Directions.DX[d]; y += Directions.DY[d]; foundOpponent = true;
                     }
                     if (foundOpponent && x >= 0 && x < SIZE && y >= 0 && y < SIZE && board[x][y] == player) {
                         validMoves.add(new int[]{i, j}); break outer;
@@ -132,11 +127,11 @@ public class OthelloModel {
     }
 
     public boolean playRandomMove(Piece player) {
+        if (currentPlayer != player) return false;
         List<int[]> validMoves = getValidMoves(player);
         if (validMoves.isEmpty()) return false;
         int[] move = validMoves.get(random.nextInt(validMoves.size()));
-        if (currentPlayer == player) return playMove(move[0], move[1]);
-        return false;
+        return playMove(move[0], move[1]);
     }
 
     public boolean isGameOver() { return !hasValidMove(Piece.BLACK) && !hasValidMove(Piece.WHITE); }
