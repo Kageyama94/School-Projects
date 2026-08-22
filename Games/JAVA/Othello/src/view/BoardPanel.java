@@ -13,11 +13,6 @@ public class BoardPanel extends JPanel {
     private Piece[][] board;
     private List<int[]> validMoves = new ArrayList<>();
 
-    /**
-     * Chaque entrée : int[]{row, col} → progression 0.0..1.0
-     *  Phase 1 : 0.0 → 0.5  (pièce s'écrase horizontalement, couleur d'origine)
-     *  Phase 2 : 0.5 → 1.0  (pièce se déploie, nouvelle couleur)
-     */
     private final Map<String, double[]> animating = new LinkedHashMap<>();
     private Piece animTargetColor = Piece.BLACK;
     private Timer animTimer;
@@ -30,12 +25,21 @@ public class BoardPanel extends JPanel {
 
     public BoardPanel() { setBackground(new Color(30, 120, 30)); }
 
-    public void setBoard(Piece[][] board) { this.board = board; repaint(); }
+    public void setBoard(Piece[][] board) {
+        this.board = deepCopy(board);
+        repaint();
+    }
+
+    private static Piece[][] deepCopy(Piece[][] board) {
+        Piece[][] copy = new Piece[board.length][];
+        for (int i = 0; i < board.length; i++) copy[i] = board[i].clone();
+        return copy;
+    }
+    
     public void setValidMoves(List<int[]> moves) { this.validMoves = (moves != null) ? moves : new ArrayList<>(); repaint(); }
-    public int  getCellSize() { return cellSize; }
-    public int  getOffsetX() { return offsetX; }
-    public int  getOffsetY() { return offsetY; }
-    public boolean isAnimating() { return animTimer != null && animTimer.isRunning(); }
+    public int getCellSize() { return cellSize; }
+    public int getOffsetX() { return offsetX; }
+    public int getOffsetY() { return offsetY; }
 
     public void animateFlips(List<int[]> flipped, Piece fromColor, Piece toColor, Runnable onDone) {
         if (flipped == null || flipped.isEmpty()) { if (onDone != null) onDone.run(); return; }
@@ -136,7 +140,7 @@ public class BoardPanel extends JPanel {
     }
 
     /**
-     * Anime un retournement :
+     *  Anime un retournement :
      *  progress 0.0→0.5 : écrasement horizontal (couleur de départ)
      *  progress 0.5→1.0 : déploiement (couleur cible)
      */

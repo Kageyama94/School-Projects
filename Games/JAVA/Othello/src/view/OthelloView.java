@@ -15,6 +15,7 @@ public class OthelloView extends JFrame {
         setTitle("Othello MVC");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(700, 780);
+        setMinimumSize(new Dimension(300, 380));
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
@@ -34,10 +35,9 @@ public class OthelloView extends JFrame {
     public void setValidMoves(List<int[]> moves) { boardPanel.setValidMoves(moves); }
     public void setStatus(String text) { statusLabel.setText(text); }
     public void addBoardMouseListener(MouseListener l) { boardPanel.addMouseListener(l); }
-    public int  getCellSize() { return boardPanel.getCellSize(); }
-    public int  getBoardOffsetX() { return boardPanel.getOffsetX(); }
-    public int  getBoardOffsetY() { return boardPanel.getOffsetY(); }
-    public boolean isAnimating() { return boardPanel.isAnimating(); }
+    public int getCellSize() { return boardPanel.getCellSize(); }
+    public int getBoardOffsetX() { return boardPanel.getOffsetX(); }
+    public int getBoardOffsetY() { return boardPanel.getOffsetY(); }
     public void showMessage(String message) { JOptionPane.showMessageDialog(this, message); }
 
     public void animateFlips(List<int[]> flipped, Piece fromColor, Piece toColor, Runnable onDone) {
