@@ -1,9 +1,16 @@
-name: Tests Catala
+name: Tests Catala - APL
 
 # Quand la CI se déclenche : à chaque push et à chaque pull request
+# qui touchent le dossier CATALA/APL (ou ce workflow lui-même).
 on:
   push:
+    paths:
+      - "CATALA/APL/**"
+      - ".github/workflows/apl-catala.yml"
   pull_request:
+    paths:
+      - "CATALA/APL/**"
+      - ".github/workflows/apl-catala.yml"
 
 jobs:
   tests:
@@ -12,6 +19,10 @@ jobs:
     # Image Docker contenant déjà le compilateur Catala
     container:
       image: catalalang/catala:latest
+
+    defaults:
+      run:
+        working-directory: CATALA/APL
 
     steps:
       # 1. Récupère ton code dans la machine qui exécute la CI
