@@ -20,7 +20,7 @@ Le personnage traverse un niveau généré aléatoirement (sol troué, obstacles
 | `Q` | Aller à gauche |
 | `D` | Aller à droite |
 | `Z` | Sauter |
-| `A` | Activer / désactiver le mode course (plus rapide, saut plus haut) |
+| `Shift` (maintenu) | Mode course (plus rapide, saut plus haut) |
 | `F` | Tirer |
 | `Entrée` | Rejouer (sur l'écran gagné/perdu) |
 | `Échap` | Quitter |
@@ -30,14 +30,16 @@ Le personnage traverse un niveau généré aléatoirement (sol troué, obstacles
 - Ramasser une pièce (`o`) rapporte **100 points**.
 - Tomber dans un trou fait perdre la partie.
 - Atteindre la porte du château termine le niveau par une victoire.
-- Le mode course (touche `A`) augmente la vitesse et la hauteur de saut, mais rallonge la distance de freinage.
+- Le mode course (`Shift` maintenu) augmente la vitesse et la hauteur de saut, mais rallonge la distance de freinage.
 
 ## Prérequis
 
+- **Windows** (le jeu utilise l'API Windows pour la lecture clavier, voir Notes techniques)
 - OCaml (testé avec la version 5.2.1)
 - [opam](https://opam.ocaml.org/) (gestionnaire de paquets OCaml)
 - dune (système de build)
-- La bibliothèque `graphics`
+- Un compilateur C (fourni avec le switch opam, ex: mingw-w64) pour compiler le stub clavier
+- Les bibliothèques `graphics` et `unix`
 
 Installation des dépendances :
 
@@ -58,9 +60,10 @@ dune exec ./mario.exe
 
 ```
 .
-├── mario.ml       # tout le code du jeu
-├── dune           # configuration de build
-├── dune-project   # déclaration du projet dune
+├── mario.ml            # tout le code du jeu
+├── keyboard_stubs.c    # stub C pour la lecture clavier (API Windows)
+├── dune                # configuration de build
+├── dune-project        # déclaration du projet dune
 └── README.md
 ```
 
@@ -71,4 +74,4 @@ Le fichier `mario.ml` est organisé en sections : configuration (réglages et ph
 - Le niveau est une grille de caractères de 300 colonnes sur 18 lignes.
 - La physique utilise des positions et vitesses flottantes, arrondies à la case pour les collisions.
 - Le rendu utilise le double buffering (`auto_synchronize false` + `synchronize`) pour un affichage fluide en jeu. (Un scintillement peut apparaître si la fenêtre est redimensionnée, par limitation de la bibliothèque `Graphics`.)
-- La bibliothèque `Graphics` ne permettant pas de lire l'état clavier en temps réel, un système de minuteurs de persistance (`hold`) lisse les entrées pour un déplacement fluide.
+- La bibliothèque `Graphics` ne permettant pas de détecter plusieurs touches tenues simultanément (elle ne renvoie que des évènements de répétition de frappe, et Windows ne répète qu'une seule touche à la fois), la lecture clavier passe par un petit stub C (`keyboard_stubs.c`) qui interroge directement l'état réel du clavier via l'API Windows (`GetAsyncKeyState`). Cela permet un vrai multi-touche (déplacement, saut, tir et course combinables librement) mais rend le jeu spécifique à Windows.

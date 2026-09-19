@@ -1,23 +1,40 @@
 open Graphics
 
-(* ============================================================
-   CONFIGURATION : fenetre, tailles, physique
-   ============================================================ *)
+(* ========== CONFIGURATION ========== *)
 let win_w = 1100
 let win_h = 500
-let cw = 6 (* largeur d'une case en pixels *)
-let chp = 14 (* hauteur d'une case en pixels *)
-let cwf = float_of_int cw
-let chf = float_of_int chp
+let cw = ref 6
+let chp = ref 14
+let cwf = ref (float_of_int !cw)
+let chf = ref (float_of_int !chp)
 let bm = 40 (* marge basse en pixels *)
 let fps = 60.0
 
-(* dimensions du niveau et du perso *)
+(* ========== CLAVIER ========== *)
+external raw_key_down : int -> bool = "caml_key_is_down"
+external app_has_focus : unit -> bool = "caml_app_has_focus"
+let vk_q = 0x51
+let vk_d = 0x44
+let vk_z = 0x5A
+let vk_f = 0x46
+let vk_shift = 0x10 (* maintenir pour courir *)
+let vk_escape = 0x1B
+let vk_return = 0x0D
+
+let shoot_cooldown = 3 (* frames entre deux tirs quand la touche est tenue *)
+
 let pw = 3 (* largeur du perso en cases *)
 let lc = 300 (* longueur du niveau en cases *)
 let hc = 18 (* hauteur du niveau en cases *)
 
-(* constantes physiques du mouvement *)
+let camera_bounds cell_w =
+  let vc = float_of_int (win_w / cell_w) in
+  (vc, float_of_int lc -. vc)
+
+let visible_cols, cam_max =
+  let vc, cm = camera_bounds !cw in
+  (ref vc, ref cm)
+
 let gravity = 0.03
 let jump = -0.35 (* saut normal (~3 cases) *)
 let jump_fast = -0.5 (* saut en mode course (~5 cases) *)
@@ -26,9 +43,7 @@ let friction = 0.82 (* freinage au relachement *)
 let vx_max = 0.6 (* vitesse horizontale max *)
 let vy_max = 0.9 (* vitesse de chute max *)
 
-(* ============================================================
-   DONNEES ASCII : perso et ecrans
-   ============================================================ *)
+(* ========== DONNEES ASCII ========== *)
 let character = [|"{*}";
               "/O\\";
               "/ \\"|]
@@ -73,99 +88,89 @@ let lose = [|
 "  \\________/ \\______,___A___'   '___'   '___' \\________'     \\_______/      \\___/    \\________'___'  \\___\\   '___'";
 |]
 
-(* derive du perso et du chateau *)
+(* parcourt un art ASCII (tableau de string) : callback sur chaque case non-vide *)
+let iter_ascii art f =
+  for i = 0 to Array.length art - 1 do
+    for j = 0 to String.length art.(i) - 1 do
+      let ch = art.(i).[j] in
+      if ch <> ' ' then f i j ch
+    done
+  done
+
 let ph = Array.length character
 let castle_width = String.length castle.(0)
 let castle_col0 = lc - castle_width - 5
 let safe_zone = castle_col0 - 5
+let door_left = castle_col0 + castle_width / 2 - 3
+let door_right = castle_col0 + castle_width / 2 + 2
 
-(* ============================================================
-   GENERATION DU NIVEAU
-   ============================================================ *)
+(* ========== GENERATION DU NIVEAU ========== *)
 let make_holes () =
   let rec aux c acc =
     if c >= safe_zone then List.rev acc
     else
-      let width = 3 + Random.int 3 in (* 3, 4 ou 5 *)
+      let width = 5 in
       let gap = 10 + Random.int 11 in (* sol plein entre deux trous : 10 a 20 *)
       let end_ = c + width in
-      aux (end_ + gap) ((c, end_) :: acc)
+      if end_ > safe_zone then List.rev acc (* ne pas deborder dans la zone sure *)
+      else aux (end_ + gap) ((c, end_) :: acc)
   in
   aux 7 []
 
-let holes = ref []
-let is_hole c = List.exists (fun (d, f) -> c >= d && c < f) !holes
+let is_hole holes c = List.exists (fun (d, f) -> c >= d && c < f) holes
 
-let generate_ground g =
-  let ground = hc - 1 in
-  let rec aux c =
-    if c >= lc then ()
-    else begin
-      if not (is_hole c) then g.(ground).(c) <- '@';
-      aux (c + 1)
-    end
-  in
-  aux 0
+let rec iter_step start stop step f =
+  if start >= stop then ()
+  else begin
+    f start;
+    iter_step (start + step) stop step f
+  end
 
-let generate_obstacles g =
+let generate_ground holes g =
   let ground = hc - 1 in
-  let rec aux c =
-    if c >= safe_zone then ()
-    else begin
-      let height = Random.int 6 in
-      for h = 1 to height do
-        for j = 0 to 2 do (* 3 cases de large *)
-          let col = c + j in
-          if col < safe_zone && not (is_hole col) then
-            g.(ground - h).(col) <- 'X'
-        done
-      done;
-      aux (c + 40) (* prochain obstacle 40 cases plus loin *)
-    end
-  in
-  aux 25
+  iter_step 0 lc 1 (fun c ->
+    if not (is_hole holes c) then g.(ground).(c) <- '@')
 
-let generate_coins g =
+let generate_obstacles holes g =
   let ground = hc - 1 in
-  let rec aux c =
-    if c >= safe_zone then ()
-    else begin
-      if not (is_hole c) then begin
-        let h = 1 + Random.int 6 in
-        let r = ground - h in
-        if r >= 0 && g.(r).(c) = ' ' then g.(r).(c) <- 'o'
-      end;
-      aux (c + 10)
-    end
-  in
-  aux 20
+  iter_step 25 safe_zone 40 (fun c ->
+    let height = Random.int 6 in
+    for h = 1 to height do
+      for j = 0 to 2 do (* 3 cases de large *)
+        let col = c + j in
+        if col < safe_zone && not (is_hole holes col) then
+          g.(ground - h).(col) <- 'X'
+      done
+    done)
+
+let generate_coins holes g =
+  let ground = hc - 1 in
+  let max_height = 5 + ph in
+  iter_step 20 safe_zone 10 (fun c ->
+    if not (is_hole holes c) then begin
+      let h = 1 + Random.int max_height in
+      let r = ground - h in
+      if r >= 0 && g.(r).(c) = ' ' then g.(r).(c) <- 'o'
+    end)
 
 let generate_castle g =
   let h = Array.length castle in
   let ground = hc - 1 in
-  for i = 0 to h - 1 do
-    for j = 0 to castle_width - 1 do
-      let ch = castle.(i).[j] in
-      if ch <> ' ' then begin
-        let r = ground - (h - i) in
-        let c = castle_col0 + j in
-        if r >= 0 && r < hc && c >= 0 && c < lc then g.(r).(c) <- ch
-      end
-    done
-  done
+  iter_ascii castle (fun i j ch ->
+    let r = ground - (h - i) in
+    let c = castle_col0 + j in
+    if r >= 0 && r < hc && c >= 0 && c < lc then g.(r).(c) <- ch)
 
 let grid_init () =
-  holes := make_holes ();
+  let holes = make_holes () in
   let g = Array.make_matrix hc lc ' ' in
-  generate_ground g;
-  generate_obstacles g;
-  generate_coins g;
+  generate_ground holes g;
+  generate_obstacles holes g;
+  generate_coins holes g;
   generate_castle g;
   g
 
-(* ============================================================
-   ETAT DU JEU
-   ============================================================ *)
+(* ========== ETAT DU JEU ========== *)
 let grid = ref (grid_init ())
 let px = ref 2.0
 let py = ref (float_of_int (hc - 1 - ph))
@@ -173,51 +178,35 @@ let vx = ref 0.0
 let vy = ref 0.0
 let cam_x = ref 0.0
 let score = ref 0
-let won = ref false
-let lost = ref false
 let facing = ref 1.0 (* 1.0 = droite, -1.0 = gauche *)
 let shots = ref [] (* projectiles : (x, y, dx) *)
 let shoot_cd = ref 0 (* delai entre deux shots *)
-let fast_mode = ref false (* course activee ? *)
-let toggle = ref true (* anti-repetition de la bascule course *)
 
 let reset () =
   grid := grid_init ();
   px := 2.0;
   py := float_of_int (hc - 1 - ph);
   vx := 0.0; vy := 0.0; cam_x := 0.0;
-  score := 0; won := false; lost := false;
-  shots := []; shoot_cd := 0; facing := 1.0;
-  fast_mode := false; toggle := true
+  score := 0;
+  shots := []; shoot_cd := 0; facing := 1.0
 
-(* ============================================================
-   LOGIQUE : collisions, ramassage, victoire, mise a jour
-   ============================================================ *)
+(* ========== LOGIQUE ========== *)
 let iround f = int_of_float (floor (f +. 0.5))
+let clamp lo hi v = max lo (min hi v)
 
 let is_solid r c =
   r >= 0 && r < hc && c >= 0 && c < lc &&
-  (let g = !grid in
-   (g.(r).(c) = '@' && r = hc - 1) || g.(r).(c) = 'X')
+  (let ch = (!grid).(r).(c) in ch = '@' || ch = 'X')
 
 let collision_at x y =
   let h = ref false in
-  for i = 0 to ph - 1 do
-    for j = 0 to pw - 1 do
-      if character.(i).[j] <> ' ' && is_solid (y + i) (x + j) then h := true
-    done
-  done;
+  iter_ascii character (fun i j _ -> if is_solid (y + i) (x + j) then h := true);
   !h
 
 let for_each_cell f =
-  for i = 0 to ph - 1 do
-    for j = 0 to pw - 1 do
-      if character.(i).[j] <> ' ' then begin
-        let r = iround !py + i and c = iround !px + j in
-        if r >= 0 && r < hc && c >= 0 && c < lc then f r c
-      end
-    done
-  done
+  iter_ascii character (fun i j _ ->
+    let r = iround !py + i and c = iround !px + j in
+    if r >= 0 && r < hc && c >= 0 && c < lc then f r c)
 
 let collect () =
   for_each_cell (fun r c ->
@@ -226,27 +215,30 @@ let collect () =
       score := !score + 100
     end)
 
-let check_victory () =
-  let door_left  = castle_col0 + castle_width / 2 - 3 in
-  let door_right  = castle_col0 + castle_width / 2 + 2 in
-  let hg = iround !px and hd = iround !px + pw - 1 in
-  if hg >= door_left && hd <= door_right then won := true
+type state = Playing | Won | Lost
 
-let update go_left go_right do_jump run_fast do_shoot =
-  let acc = if run_fast then run *. 1.7 else run in
-  let vmax = if run_fast then vx_max *. 1.8 else vx_max in
-  if go_left  then (vx := !vx -. acc; facing := -1.0);
-  if go_right then (vx := !vx +. acc; facing := 1.0);
-  if !vx > vmax then vx := vmax;
-  if !vx < -.vmax then vx := -.vmax;
+type input = { left : bool; right : bool; jump : bool; run : bool; shoot : bool }
+
+let check_victory on_ground =
+  let hg = iround !px and hd = iround !px + pw - 1 in
+  on_ground && hg >= door_left && hd <= door_right
+
+let update input =
+  let acc, vmax, jump_force =
+    if input.run then (run *. 1.7, vx_max *. 1.8, jump_fast)
+    else (run, vx_max, jump)
+  in
+  if input.left  then (vx := !vx -. acc; facing := -1.0);
+  if input.right then (vx := !vx +. acc; facing := 1.0);
+  vx := clamp (-.vmax) vmax !vx;
   px := !px +. !vx;
   if collision_at (iround !px) (iround !py) then begin
     if !vx > 0.0 then px := float_of_int (iround !px) -. 1.0
     else px := float_of_int (iround !px) +. 1.0;
     vx := 0.0
   end;
-  if !px < 0.0 then (px := 0.0; vx := 0.0);
-  if !px > float_of_int (lc - pw) then px := float_of_int (lc - pw);
+  if !px < 0.0 then vx := 0.0;
+  px := clamp 0.0 (float_of_int (lc - pw)) !px;
   vx := !vx *. friction;
 
   let on_ground = collision_at (iround !px) (iround !py + 1) in
@@ -255,14 +247,12 @@ let update go_left go_right do_jump run_fast do_shoot =
     py := float_of_int (iround !py)
   end;
 
-  let jump_force = if run_fast then jump_fast else jump in
-  if do_jump && on_ground then begin
+  if input.jump && on_ground then begin
     vy := jump_force;
     py := !py -. 1.0 (* decolle d'une case immediatement *)
   end;
 
-  vy := !vy +. gravity;
-  if !vy > vy_max then vy := vy_max;
+  vy := min vy_max (!vy +. gravity);
   let oldy = !py in
   py := !py +. !vy;
   if collision_at (iround !px) (iround !py) then begin
@@ -270,35 +260,38 @@ let update go_left go_right do_jump run_fast do_shoot =
     vy := 0.0
   end;
 
-  if !py > float_of_int hc then lost := true;
+  let lost = !py > float_of_int hc in
 
   if !shoot_cd > 0 then decr shoot_cd;
-  if do_shoot && !shoot_cd = 0 then begin
+  if input.shoot && !shoot_cd = 0 then begin
     let start_x = if !facing > 0.0 then !px +. float_of_int pw else !px -. 1.0 in
     shots := (start_x, !py +. 1.0, !facing *. 0.7) :: !shots;
-    shoot_cd := 5
+    shoot_cd := shoot_cooldown
   end;
-  shots := List.map (fun (x, y, dx) -> (x +. dx, y, dx)) !shots;
-  shots := List.filter (fun (x, y, _) ->
-    x >= 0.0 && x <= float_of_int lc && not (is_solid (iround y) (iround x))
+  shots := List.filter_map (fun (x, y, dx) ->
+    let x = x +. dx in
+    if x >= 0.0 && x <= float_of_int lc && not (is_solid (iround y) (iround x))
+    then Some (x, y, dx) else None
   ) !shots;
 
   collect ();
-  check_victory ();
+  let won = check_victory on_ground in
 
-  let visible_cols = float_of_int (win_w / cw) in
-  let target = !px -. visible_cols /. 3.0 in
-  let cam_max = float_of_int lc -. visible_cols in
-  let target = max 0.0 (min (max 0.0 cam_max) target) in
-  cam_x := !cam_x +. (target -. !cam_x) *. 0.15
+  let target = !px -. !visible_cols /. 3.0 in
+  let target = clamp 0.0 (max 0.0 !cam_max) target in
+  cam_x := !cam_x +. (target -. !cam_x) *. 0.15;
 
-(* ============================================================
-   RENDU
-   ============================================================ *)
+  if lost then Lost else if won then Won else Playing
+
+(* ========== RENDU ========== *)
+let screen_pos col_f row_f =
+  let sx = int_of_float ((col_f -. !cam_x) *. !cwf) in
+  let sy = bm + int_of_float ((float_of_int (hc - 1) -. row_f) *. !chf) in
+  (sx, sy)
+
 let draw_glyph col_f row_f ch =
-  let sx = int_of_float ((col_f -. !cam_x) *. cwf) in
-  let sy = bm + int_of_float ((float_of_int (hc - 1) -. row_f) *. chf) in
-  if sx > -cw && sx < win_w then begin
+  let sx, sy = screen_pos col_f row_f in
+  if sx > -(!cw) && sx < win_w then begin
     moveto sx sy;
     draw_char ch
   end
@@ -330,23 +323,16 @@ let draw_hero () =
   set_color (rgb 0 0 0);
   for i = 0 to ph - 1 do
     for j = 0 to pw - 1 do
-      let sx = int_of_float ((!px +. float_of_int j -. !cam_x) *. cwf) in
-      let sy = bm + int_of_float ((float_of_int (hc - 1) -. (!py +. float_of_int i)) *. chf) in
-      fill_rect sx sy cw chp
+      let sx, sy = screen_pos (!px +. float_of_int j) (!py +. float_of_int i) in
+      fill_rect sx sy !cw !chp
     done
   done;
   (* 2. dessiner le perso par-dessus *)
-  for i = 0 to ph - 1 do
-    for j = 0 to pw - 1 do
-      let ch = character.(i).[j] in
-      if ch <> ' ' then begin
-        if i = 0 then set_color (rgb 230 60 40)
-        else if ch = 'O' then set_color (rgb 250 220 170)
-        else set_color (rgb 245 245 245);
-        draw_glyph (!px +. float_of_int j) (!py +. float_of_int i) ch
-      end
-    done
-  done
+  iter_ascii character (fun i j ch ->
+    if i = 0 then set_color (rgb 230 60 40)
+    else if ch = 'O' then set_color (rgb 250 220 170)
+    else set_color (rgb 245 245 245);
+    draw_glyph (!px +. float_of_int j) (!py +. float_of_int i) ch)
 
 let draw_hud () =
   set_color (rgb 255 255 0);
@@ -354,87 +340,79 @@ let draw_hud () =
   draw_string (Printf.sprintf "SCORE : %d" !score)
 
 let draw_message art color bottom =
-  let cw_px, ch_px = text_size "M" in
+  let cw_px, ch_px = !cw, !chp in
   let line_step = ch_px + 2 in
   let n_lines = Array.length art in
   let width = Array.fold_left (fun m s -> max m (String.length s)) 0 art in
   let x0 = (win_w - width * cw_px) / 2 in
   let y_top = (win_h + n_lines * line_step) / 2 in
   set_color color;
-  for i = 0 to n_lines - 1 do
-    let line = art.(i) in
-    for j = 0 to String.length line - 1 do
-      if line.[j] <> ' ' then begin
-        moveto (x0 + j * cw_px) (y_top - i * line_step);
-        draw_char line.[j]
-      end
-    done
-  done;
+  iter_ascii art (fun i j ch ->
+    moveto (x0 + j * cw_px) (y_top - i * line_step);
+    draw_char ch);
   set_color (rgb 235 235 235);
   let tw, _ = text_size bottom in
   moveto ((win_w - tw) / 2) (y_top - n_lines * line_step - 20);
   draw_string bottom
 
-(* ============================================================
-   BOUCLE PRINCIPALE
-   ============================================================ *)
-type state = Playing | Won | Lost
-
+(* ========== BOUCLE PRINCIPALE ========== *)
 let () =
   Random.self_init ();
   open_graph (Printf.sprintf " %dx%d" win_w win_h);
-  set_window_title "Super Mario Bros - rendu texte";
-  (try set_font "fixed" with _ -> ());
+  set_window_title "Super Mario Bros";
+  let is_monospace () =
+    let w1, _ = text_size "M" in
+    let w2, _ = text_size "i" in
+    w1 > 0 && w1 = w2
+  in
+  let rec try_fonts = function
+    | [] -> ()
+    | f :: rest ->
+      (try
+         set_font f;
+         if not (is_monospace ()) then try_fonts rest
+       with _ -> try_fonts rest)
+  in
+  try_fonts ["fixed"; "Consolas"; "Lucida Console"; "Courier New"; "monospace"];
+
+  let mw, mh = text_size "M" in
+  if mw > 0 && mh > 0 then begin
+    cw := mw; chp := mh;
+    cwf := float_of_int mw; chf := float_of_int mh;
+    let vc, cm = camera_bounds mw in
+    visible_cols := vc; cam_max := cm
+  end;
+
   auto_synchronize false;
 
   reset ();
   let state = ref Playing in
   let frame_time = 1.0 /. fps in
   let running = ref true in
-
-  let t_left = ref 0 and t_right = ref 0 and t_jump = ref 0
-  and t_shoot = ref 0 in
-  let hold = 10 in
-  let key_table = [
-    (['q'; 'Q'], t_left);
-    (['d'; 'D'], t_right);
-    (['z'; 'Z'], t_jump);
-    (['f'; 'F'], t_shoot);
-  ] in
+  let prev_enter_key = ref false in
 
   while !running do
     let t0 = Unix.gettimeofday () in
 
-    let keys = ref [] in
-    while key_pressed () do keys := read_key () :: !keys done;
-    let pressed k = List.mem k !keys in
-    if pressed '\027' then running := false;
+    let focused = app_has_focus () in
+    let key_down vk = focused && raw_key_down vk in
 
-    List.iter (fun (ks, t) ->
-      if List.exists pressed ks then t := hold
-    ) key_table;
+    if key_down vk_escape then running := false;
 
-    if pressed 'a' || pressed 'A' then begin
-      if !toggle then begin
-        fast_mode := not !fast_mode;
-        toggle := false
-      end
-    end else
-      toggle := true;
-
+    let enter_key = key_down vk_return in
     (match !state with
      | Won | Lost ->
-       if pressed '\r' || pressed '\n' then (reset (); state := Playing)
+       if enter_key && not !prev_enter_key then (reset (); state := Playing)
      | Playing ->
-       let go_left = !t_left > 0 in
-       let go_right = !t_right > 0 in
-       let do_jump = !t_jump > 0 in
-       let do_shoot = !t_shoot > 0 in
-       update go_left go_right do_jump !fast_mode do_shoot;
-       if !won then state := Won;
-       if !lost then state := Lost);
-
-    List.iter (fun (_, t) -> if !t > 0 then decr t) key_table;
+       let input = {
+         left = key_down vk_q;
+         right = key_down vk_d;
+         jump = key_down vk_z;
+         run = key_down vk_shift;
+         shoot = key_down vk_f;
+       } in
+       state := update input);
+    prev_enter_key := enter_key;
 
     set_color (rgb 0 0 0);
     fill_rect 0 0 (size_x ()) (size_y ());
