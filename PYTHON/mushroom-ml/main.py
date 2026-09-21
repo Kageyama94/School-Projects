@@ -4,13 +4,17 @@ import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
 import os
+import threading
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+from couleurs import moyenne_rgb
 
 # ============================================================
 # Partie 1 : Récupération des données
@@ -19,11 +23,22 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 for d in ["data", "figures", "modele"]:
     os.makedirs(d, exist_ok=True)
 
+_local = threading.local()
+
+def get_session():
+    if not hasattr(_local, "session"):
+        _local.session = requests.Session()
+        _local.session.headers.update({"User-Agent": "Mozilla/5.0 (compatible; mushroom-ml-scraper/1.0)"})
+    return _local.session
+
 def comestible(soup):
     cat_div = soup.find('div', class_='catlink')
     if cat_div is None:
         return ''
-    category = cat_div.find('a').text.strip()
+    link = cat_div.find('a')
+    if link is None:
+        return ''
+    category = link.text.strip()
     if category == 'Poisonous Mushrooms':
         return 'P'
     elif category == 'Edible Mushrooms':
@@ -54,18 +69,24 @@ def surface(soup):
     return '-'.join(v.replace(' ', '').replace('-', '') for v in _champ(soup, 'Surface:'))
 
 def csv_info(url):
-    response = requests.get(url, timeout=10)
-    if response.status_code != 200:
+    try:
+        response = get_session().get(url, timeout=10)
+        if response.status_code != 200:
+            return None
+        soup = BeautifulSoup(response.content, 'html.parser')
+        type_ = comestible(soup)
+        color_info = color(soup)
+        shape_info = shape(soup)
+        surface_info = surface(soup)
+        return (type_, color_info, shape_info, surface_info)
+    except (requests.exceptions.RequestException, AttributeError):
         return None
-    soup = BeautifulSoup(response.content, 'html.parser')
-    type_ = comestible(soup)
-    color_info = color(soup)
-    shape_info = shape(soup)
-    surface_info = surface(soup)
-    return f"{type_},{color_info},{shape_info},{surface_info}"
 
 def extract_mushroom_links(url):
-    response = requests.get(url)
+    try:
+        response = get_session().get(url, timeout=10)
+    except requests.exceptions.RequestException:
+        return
     if response.status_code != 200:
         return
     soup = BeautifulSoup(response.content, 'html.parser')
@@ -92,55 +113,46 @@ def write_to_csv(filename, urls, max_workers=20):
             for info in executor.map(csv_info, urls):
                 done += 1
                 if info is not None:
-                    writer.writerow(info.split(','))
+                    writer.writerow(info)
                 print(f"{done}/{len(urls)}", end='\r')
     print()
 
 if __name__ == "__main__":
-    url_all = "https://ultimate-mushroom.com/mushroom-alphabet.html"
-    mushroom_links = list(extract_mushroom_links(url_all))
-    print(f"Nombre de liens trouvés: {len(mushroom_links)}")
-    write_to_csv('data/champignons.csv', mushroom_links, max_workers=8)
+    csv_path = 'data/champignons.csv'
+    if os.path.exists(csv_path):
+        print(f"{csv_path} existe déjà, scraping ignoré (supprimez le fichier pour le régénérer).")
+    else:
+        url_all = "https://ultimate-mushroom.com/mushroom-alphabet.html"
+        mushroom_links = list(extract_mushroom_links(url_all))
+        print(f"Nombre de liens trouvés: {len(mushroom_links)}")
+        write_to_csv(csv_path, mushroom_links, max_workers=8)
 
     # ============================================================
     # Partie 2 : Manipulation des données
     # ============================================================
  
-    champignons = pd.read_csv('data/champignons.csv')
- 
+    champignons = pd.read_csv(csv_path)
+
     print(champignons["Edible"].value_counts(dropna=False))
- 
-    champignons["Edible"] = champignons["Edible"].replace({"E": 0, "I": 1, "P": 2})
- 
-    champignons["Edible"] = champignons["Edible"].fillna(-1).astype(int)
+
+    n_avant = len(champignons)
+    champignons = champignons.dropna(subset=["Edible"])
+    if len(champignons) < n_avant:
+        print(f"{n_avant - len(champignons)} ligne(s) non classée(s) supprimée(s).")
+
+    champignons["Edible"] = champignons["Edible"].map({"E": 0, "I": 1, "P": 2}).astype(int)
     print(champignons["Edible"].value_counts())
  
     for col in ["Shape", "Surface"]:
-        valeurs = pd.unique(champignons[col].str.split("-").explode().dropna())
-        for v in valeurs:
-            champignons[f"{col}_{v}"] = champignons[col].str.contains(v, regex=False, na=False).astype(int)
+        dummies = champignons[col].str.get_dummies(sep="-").add_prefix(f"{col}_")
+        champignons = pd.concat([champignons, dummies], axis=1)
     champignons = champignons.drop(columns=["Shape", "Surface"])
     print("Taille après indicatrices:", champignons.shape)
  
     couleurs = pd.unique(champignons["Color"].str.split("-").explode().dropna())
     print(len(couleurs), sorted(couleurs))
 
-    rgb_map = {
-        "Black":  [0, 0, 0],       "Blue":   [0, 0, 255],
-        "Brown":  [139, 69, 19],   "Gray":   [128, 128, 128],
-        "Green":  [0, 128, 0],     "Lilac":  [200, 162, 200],
-        "Orange": [255, 165, 0],   "Pale":   [240, 240, 230],
-        "Pink":   [255, 192, 203], "Purple": [128, 0, 128],
-        "Red":    [255, 0, 0],     "Tan":    [210, 180, 140],
-        "Violet": [238, 130, 238], "White":  [255, 255, 255],
-        "Yellow": [255, 255, 0],
-    }
     colors = pd.DataFrame({"Color": champignons["Color"].dropna().unique()})
- 
-    def moyenne_rgb(combinaison):
-        comps = [rgb_map[c] for c in combinaison.split("-") if c in rgb_map]
-        moy = [sum(canal) / len(canal) for canal in zip(*comps)]
-        return pd.Series(moy)
     colors[["R", "G", "B"]] = colors["Color"].apply(moyenne_rgb)
     print(colors.head())
     champignons = champignons.merge(colors, on="Color", how="left").drop(columns=["Color"])
@@ -156,32 +168,51 @@ if __name__ == "__main__":
     X = champignons.drop(columns=["Edible"])
     y = champignons["Edible"]
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.25, random_state=42)
+        X, y, test_size=0.25, random_state=42, stratify=y)
 
-    scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
+    noms_classes = ["E", "I", "P"]
 
-    svc_scaled = SVC()
-    svc_scaled.fit(X_train_scaled, y_train)
-    y_pred_scaled = svc_scaled.predict(X_test_scaled)
-    print("\n[SVC + scaler] accuracy:", accuracy_score(y_test, y_pred_scaled))
-    print("[SVC + scaler] matrice de confusion:\n", confusion_matrix(y_test, y_pred_scaled))
+    pipeline_svc = Pipeline([("scaler", StandardScaler()), ("svc", SVC(class_weight="balanced"))])
+    grid_svc = GridSearchCV(
+        pipeline_svc,
+        [
+            {"svc__kernel": ["rbf"], "svc__C": [0.1, 1, 10], "svc__gamma": ["scale", "auto"]},
+            {"svc__kernel": ["linear"], "svc__C": [0.1, 1, 10]},
+        ],
+        cv=5, scoring="recall_macro")
+    grid_svc.fit(X_train, y_train)
+    svc_scaled = grid_svc.best_estimator_
+    y_pred_scaled = svc_scaled.predict(X_test)
+    print("\n[SVC + scaler] meilleurs paramètres:", grid_svc.best_params_)
+    print("[SVC + scaler] accuracy:", accuracy_score(y_test, y_pred_scaled))
+    print("[SVC + scaler] matrice de confusion:\n", confusion_matrix(y_test, y_pred_scaled, labels=[0, 1, 2]))
+    print("[SVC + scaler] rapport par classe:\n",
+          classification_report(y_test, y_pred_scaled, labels=[0, 1, 2], target_names=noms_classes))
 
-    tree = DecisionTreeClassifier(max_depth=3, random_state=42)
-    tree.fit(X_train, y_train)
-    print("\n[Arbre] accuracy:", accuracy_score(y_test, tree.predict(X_test)))
+    grid_tree = GridSearchCV(
+        DecisionTreeClassifier(random_state=42, class_weight="balanced"),
+        {"max_depth": [2, 3, 4, 5, 6]},
+        cv=5, scoring="recall_macro")
+    grid_tree.fit(X_train, y_train)
+    tree = grid_tree.best_estimator_
+    y_pred_tree = tree.predict(X_test)
+    print("\n[Arbre] meilleure profondeur:", grid_tree.best_params_)
+    print("[Arbre] accuracy:", accuracy_score(y_test, y_pred_tree))
+    print("[Arbre] matrice de confusion:\n", confusion_matrix(y_test, y_pred_tree, labels=[0, 1, 2]))
+    print("[Arbre] rapport par classe:\n",
+          classification_report(y_test, y_pred_tree, labels=[0, 1, 2], target_names=noms_classes))
 
     plt.figure(figsize=(20, 10))
     plot_tree(tree,
+              max_depth=3,
               feature_names=X.columns,
-              class_names=["E", "I", "P"],
+              class_names=noms_classes,
               filled=True, rounded=True, fontsize=8)
     plt.savefig("figures/arbre_decision.png", dpi=150, bbox_inches="tight")
     plt.close()
-    print("\nArbre sauvegardé dans figures/arbre_decision.png")
+    print(f"\nArbre (profondeur réelle {tree.get_depth()}, 3 premiers niveaux affichés) "
+          "sauvegardé dans figures/arbre_decision.png")
 
     joblib.dump(svc_scaled, "modele/modele_svm.joblib")
-    joblib.dump(scaler, "modele/scaler.joblib")
     joblib.dump(tree, "modele/modele_arbre.joblib")
     print("Modèles sauvegardés.")

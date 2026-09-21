@@ -45,10 +45,12 @@ Puis ouvrir [http://localhost:8080/form](http://localhost:8080/form) dans un nav
 mushroom-ml/
 ├── data/              champignons.csv (jeu de données scrapé)
 ├── figures/           arbre_decision.png (visualisation de l'arbre)
-├── modele/            modèles entraînés + scaler (.joblib)
+├── modele/            modèles entraînés (.joblib), scaler inclus dans le pipeline SVM
 ├── main.py            scraping + traitement + entraînement
 ├── serveur.py         service web Flask
-├── formulaire.html    interface de saisie
+├── couleurs.py        palette de couleurs (RGB_MAP) partagée par main.py et serveur.py
+├── templates/
+│   └── formulaire.html  interface de saisie (template Jinja2, généré depuis les colonnes du modèle)
 └── README.md
 ```
 
@@ -77,12 +79,12 @@ Pour des raisons de performance, chaque fiche n'est requêtée qu'une seule fois
 
 ### Partie 3 — Apprentissage (scikit-learn)
 
-- Séparation des données en jeu d'entraînement (75 %) et de test (25 %).
-- Entraînement d'un **SVM** (avec `StandardScaler`) et d'un **arbre de décision** (profondeur 3).
-- Évaluation via l'accuracy et la matrice de confusion.
+- Séparation stratifiée des données en jeu d'entraînement (75 %) et de test (25 %).
+- Entraînement d'un **SVM** (avec `StandardScaler`) et d'un **arbre de décision**, tous deux avec `class_weight="balanced"` et hyperparamètres réglés par `GridSearchCV` (validation croisée à 5 plis, `scoring="recall_macro"` pour équilibrer le rappel entre les 3 classes plutôt que l'accuracy brute).
+- Évaluation via l'accuracy, la matrice de confusion et un rapport précision/rappel par classe.
 - Visualisation de l'arbre dans `figures/arbre_decision.png`.
 - Sauvegarde des modèles dans `modele/`.
 
 ### Partie 4 — Service web (Flask)
 
-Un serveur Flask sert un formulaire (`/form`) et traite la prédiction (`/rep`) en chargeant le modèle choisi.
+Un serveur Flask sert un formulaire (`/form`) et traite la prédiction (`/rep`) en chargeant le modèle choisi. Les cases à cocher Forme/Surface du formulaire (`templates/formulaire.html`) sont générées dynamiquement à partir des colonnes du modèle entraîné (`feature_names_in_`), pour rester automatiquement synchronisées si les données sont régénérées avec un vocabulaire différent. La couleur est choisie via des cases à cocher (une par couleur connue de `couleurs.py`) plutôt qu'en RGB brut ; la moyenne RGB des couleurs cochées est calculée avec la même fonction (`moyenne_rgb`) que celle utilisée à l'entraînement, et aucune couleur cochée retombe sur la valeur "couleur inconnue" (-255) plutôt que sur le noir.

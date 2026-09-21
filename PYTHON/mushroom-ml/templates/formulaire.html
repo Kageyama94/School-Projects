@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Prédiction de champignon</title>
+</head>
+<body>
+    <h1>Caractéristiques du champignon</h1>
+    <form action="/rep" method="post">
+        <input type="submit" value="Prédire">
+        <table border="1" cellpadding="10">
+            <thead>
+                <th>Couleur</th>
+                <th>Forme (Shape)</th>
+                <th>Surface</th>
+                <th>Modèle</th>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="vertical-align: top;">
+                        {% for couleur in couleurs %}
+                        <label><input type="checkbox" name="Color" value="{{ couleur }}"> {{ couleur }}</label><br>
+                        {% endfor %}
+                    </td>
+                    <td style="vertical-align: top;">
+                        {% for forme in formes %}
+                        <label><input type="checkbox" name="Shape_{{ forme }}" value="1"> {{ forme }}</label><br>
+                        {% endfor %}
+                    </td>
+                    <td style="vertical-align: top;">
+                        {% for surface in surfaces %}
+                        <label><input type="checkbox" name="Surface_{{ surface }}" value="1"> {{ surface }}</label><br>
+                        {% endfor %}
+                    </td>
+                    <td style="vertical-align: top;">
+                        <select name="modele">
+                            <option value="svm">SVM</option>
+                            <option value="arbre">Arbre de décision</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</body>
+</html>
