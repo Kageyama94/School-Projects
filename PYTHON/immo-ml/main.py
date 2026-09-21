@@ -1,4 +1,5 @@
 import os
+import threading
 import unicodedata
 import requests
 import numpy as np
@@ -18,11 +19,22 @@ from sklearn.decomposition import PCA
 from concurrent.futures import ThreadPoolExecutor
 
 base_url = "https://www.immo-entre-particuliers.com"
-session = requests.Session()
-session.headers.update({
+REQUEST_DELAY = 0.3  # pause après chaque requête réussie pour ne pas se faire bannir
+
+HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                   "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
-})
+}
+
+# requests.Session n'est pas garanti thread-safe : chaque thread du ThreadPoolExecutor
+# obtient sa propre session au lieu d'en partager une globale
+_thread_local = threading.local()
+
+def get_session():
+    if not hasattr(_thread_local, "session"):
+        _thread_local.session = requests.Session()
+        _thread_local.session.headers.update(HEADERS)
+    return _thread_local.session
 
 DOSSIER = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(DOSSIER, "data")
@@ -34,8 +46,9 @@ class NonValide(Exception):
 def getSoup(url, max_retries=3):
     for attempt in range(max_retries):
         try:
-            response = session.get(url, timeout=30)
+            response = get_session().get(url, timeout=30)
             response.raise_for_status()
+            time.sleep(REQUEST_DELAY)
             return BeautifulSoup(response.text, 'lxml')
         except (requests.exceptions.Timeout,
                 requests.exceptions.ConnectionError) as e:

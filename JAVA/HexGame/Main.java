@@ -202,13 +202,13 @@ public class Main extends JPanel {
     }
 
     private boolean hasWon(int player) {
-        boolean[][] visited = new boolean[N][N];
         List<int[]> path = new ArrayList<>();
 
         if (player == 1) {
             // RED line winner
             for (int row = 1; row < N - 1; row++) {
                 if (board[row][1] == 1) {
+                    boolean[][] visited = new boolean[N][N];
                     path.clear();
                     if (dfs(row, 1, player, visited, path)) {
                         winningPath = new ArrayList<>(path);
@@ -220,6 +220,7 @@ public class Main extends JPanel {
             // BLUE line winner
             for (int col = 1; col < N - 1; col++) {
                 if (board[1][col] == 2) {
+                    boolean[][] visited = new boolean[N][N];
                     path.clear();
                     if (dfs(1, col, player, visited, path)) {
                         winningPath = new ArrayList<>(path);

@@ -43,6 +43,7 @@ public class SoundPlayer implements Sound {
                 AudioInputStream ais = new AudioInputStream(bytes, format, data.length / format.getFrameSize())) {
                 Clip c = AudioSystem.getClip();
                 c.open(ais);
+                Runtime.getRuntime().addShutdownHook(new Thread(c::close));
                 return new SoundPlayer(c);
             } catch (IOException | LineUnavailableException e) {
                 System.err.println("Erreur création clip: " + e.getMessage());

@@ -24,7 +24,7 @@ Des poussins apparaissent un par un depuis un portail d'entrée et marchent tout
 ```
 
 - **100 poussins** apparaissent progressivement (1 par seconde)
-- Chaque poussin qui tombe de plus de **5 cases** meurt
+- Chaque poussin qui tombe de **5 cases ou plus** meurt
 - La partie se termine quand tous les poussins ont disparu ou atteint la sortie
 
 ---
@@ -101,9 +101,9 @@ src/
 **Prérequis**
 - Java 21 ou supérieur
 
-**Compilation**
+**Compilation (depuis la racine du projet)**
 ```bash
-javac -d out $(find src -name "*.java")
+javac -d out -sourcepath src src/app/Main.java
 ```
 
 **Lancement**

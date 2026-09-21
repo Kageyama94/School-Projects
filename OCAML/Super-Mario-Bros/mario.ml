@@ -249,7 +249,9 @@ let update input =
 
   if input.jump && on_ground then begin
     vy := jump_force;
-    py := !py -. 1.0 (* decolle d'une case immediatement *)
+    let lift_y = !py -. 1.0 in
+    if not (collision_at (iround !px) (iround lift_y)) then
+      py := lift_y (* decolle d'une case immediatement, sauf plafond juste au-dessus *)
   end;
 
   vy := min vy_max (!vy +. gravity);

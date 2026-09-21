@@ -91,10 +91,7 @@ class AdminController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $deliveredOrders = Order::whereIn('order_group_id', $deliveredPage->pluck('order_group_id'))->get()
-            ->groupBy('order_group_id');
-        $deliveredGroups = $deliveredPage->pluck('order_group_id')
-            ->mapWithKeys(fn($groupId) => [$groupId => $deliveredOrders->get($groupId, collect())]);
+        $deliveredGroups = Order::groupsForPage($deliveredPage);
 
         return view('admin/order', compact('pendingGroups', 'activeGroups', 'deliveredGroups', 'deliveredPage', 'drivers'));
     }
@@ -175,7 +172,7 @@ class AdminController extends Controller
         $driver = Driver::findOrFail($id);
         $userId = $driver->user_id;
         Order::where('driver_id', $driver->id)->where('status', 'delivering')->update(['status' => 'preparing']);
-        Order::where('driver_id', $driver->id)->update(['driver_id' => null]);
+        // La FK orders.driver_id est ON DELETE SET NULL (voir migration), pas besoin de la nullifier ici.
         $driver->delete();
         if ($userId) {
             User::find($userId)?->delete();

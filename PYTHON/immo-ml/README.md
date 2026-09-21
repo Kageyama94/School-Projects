@@ -28,7 +28,7 @@ immo-ml/
 Installation des dépendances :
 
 ```bash
-pip install requests beautifulsoup4 lxml pandas scikit-learn matplotlib numpy
+pip install -r requirements.txt
 ```
 
 ---

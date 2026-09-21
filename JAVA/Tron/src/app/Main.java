@@ -23,7 +23,7 @@ public class Main {
                     modeOptions[0]
             );
 
-            if (modeChoice == -1) System.exit(0);
+            if (modeChoice == -1) { System.exit(0); return; }
 
             GameMode mode = GameMode.values()[modeChoice];
 

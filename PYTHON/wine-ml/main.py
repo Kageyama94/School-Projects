@@ -13,6 +13,7 @@ import sys
 import time
 import threading
 import subprocess
+import signal
 import json
 import numpy as np
 import pandas as pd
@@ -49,6 +50,20 @@ os.makedirs("figures", exist_ok=True)
 URL_BASE = "https://www.millesima.fr"
 URL_LISTE = URL_BASE + "/bordeaux.html?page={page}"
 
+# PID des processus chromedriver lancés par ce script, pour un nettoyage ciblé
+# (voir _kill_pid) au lieu de tuer tous les Chrome/chromedriver de la machine.
+_driver_pids = set()
+_driver_pids_lock = threading.Lock()
+
+def _kill_pid(pid):
+    if sys.platform.startswith("win"):
+        subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True)
+    else:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+
 def _build_driver():
     """Crée un Chrome headless avec les optimisations de vitesse."""
     options = Options()
@@ -71,7 +86,10 @@ def _build_driver():
         "profile.managed_default_content_settings.images": 2,
         "profile.default_content_setting_values.notifications": 2,
     })
-    return webdriver.Chrome(options=options)
+    driver = webdriver.Chrome(options=options)
+    with _driver_pids_lock:
+        _driver_pids.add(driver.service.process.pid)
+    return driver
 
 _tls = threading.local()
 
@@ -87,8 +105,8 @@ def _redemarrer_driver_tls():
     if hasattr(_tls, "driver"):
         try:
             _tls.driver.quit()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[warn] driver.quit() a échoué pendant le redémarrage : {e}")
     _tls.driver = _build_driver()
     _tls.cookies_done = False
 
@@ -204,7 +222,7 @@ def _liens_vins(soup):
 
 def _scraper_une_fiche(url):
     """Worker : renvoie une liste de champs ou None si à ignorer."""
-    for _ in range(3):
+    for tentative in range(3):
         try:
             # Compteur de redémarrage préventif, par thread.
             if not hasattr(_tls, "compteur"):
@@ -212,14 +230,19 @@ def _scraper_une_fiche(url):
             _tls.compteur += 1
             if _tls.compteur % 50 == 0:
                 _redemarrer_driver_tls()
-            
+
             soup = getsoup(url)
             champs = informations(soup) or [None] * 5
             ligne = ["" if v is None else str(v) for v in champs]
             time.sleep(1.0)
-            return ligne if ligne[0].strip() else None
-        except (InvalidSessionIdException, WebDriverException, TimeoutException):
+            if ligne[0].strip():
+                return ligne
+            print(f"[warn] fiche ignorée (page chargée mais contenu introuvable — bloquée/CAPTCHA ?) : {url}")
+            return None
+        except (InvalidSessionIdException, WebDriverException, TimeoutException) as e:
+            print(f"[warn] tentative {tentative + 1}/3 échouée pour {url} ({type(e).__name__}), redémarrage du driver.")
             _redemarrer_driver_tls()
+    print(f"[warn] fiche abandonnée après 3 tentatives : {url}")
     return None
 
 def scraper_bordeaux(chemin_csv = "vins.csv", n_workers = 4):
@@ -243,8 +266,8 @@ def scraper_bordeaux(chemin_csv = "vins.csv", n_workers = 4):
     finally:
         try:
             driver.quit()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[warn] driver.quit() a échoué en fin de collecte des URLs : {e}")
 
     urls = sorted(urls)
     print(f"[info] Total : {len(urls)} fiches, {n_workers} workers.")
@@ -275,9 +298,12 @@ def scraper_bordeaux(chemin_csv = "vins.csv", n_workers = 4):
                               f"({ignorees} ignorées, "
                               f"{fait/dt:.2f} fiches/s)")
 
-    # Cleanup : taskkill nettoie les drivers thread-local restants.
-    subprocess.run(["taskkill", "/F", "/IM", "chromedriver.exe"], capture_output=True)
-    subprocess.run(["taskkill", "/F", "/IM", "chrome.exe"], capture_output=True)
+    # Cleanup : ferme uniquement les drivers thread-local créés par ce script
+    # (par PID), jamais les autres fenêtres Chrome ouvertes sur la machine.
+    with _driver_pids_lock:
+        pids = list(_driver_pids)
+    for pid in pids:
+        _kill_pid(pid)
     print(f"[ok] CSV écrit dans {chemin_csv} : ({fait - ignorees} fiches valides et {ignorees} ignorées).")
 
 # NETTOYAGE
@@ -324,6 +350,12 @@ def preparer_donnees(vins, log=False, random_state=49):
     if log:
         y = np.log(y)
     return train_test_split(X, y, test_size=0.25, random_state=random_state)
+
+def _indices_entrainement(n, random_state=49):
+    """Indices d'entraînement pour n lignes, avec le même split que preparer_donnees
+    (même n_samples + même random_state => même partition)."""
+    idx_train, _ = train_test_split(np.arange(n), test_size=0.25, random_state=random_state)
+    return idx_train
 
 def evaluer(modele, X_tr, y_tr, X_te, y_te, pre=None):
     if pre == "norm":
@@ -420,7 +452,9 @@ def apprentissage(chemin_csv="vins_clean.csv"):
     s, _ = evaluer(_fabriquer(M_nom, h, k), pca.transform(X_tr), y_tr, pca.transform(X_te), y_te)
     print(f"{M_nom} sur PCA -> r2 = {s:.4f}")
 
-    corr = vins.corr()
+    # Corrélations calculées uniquement sur les lignes d'entraînement, pour ne pas
+    # laisser le test influencer la sélection des attributs ci-dessous (fuite de données)
+    corr = vins.iloc[_indices_entrainement(len(vins))].corr()
     fig, ax = plt.subplots(figsize=(14, 12))
     sns.heatmap(corr, cmap="coolwarm", center=0, ax=ax)
     plt.tight_layout()

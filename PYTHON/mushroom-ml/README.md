@@ -14,7 +14,7 @@ Projet de machine learning visant à prédire si un champignon est **comestible 
 Installation :
 
 ```
-pip install requests beautifulsoup4 pandas scikit-learn matplotlib joblib flask
+pip install -r requirements.txt
 ```
 
 ---
