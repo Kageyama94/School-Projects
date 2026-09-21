@@ -12,6 +12,7 @@ if (-not (Test-Path $opamBin)) {
 }
 
 $ninjaDir = $null
+$ninjaMissing = $false
 if (Get-Command ninja -ErrorAction SilentlyContinue) {
     Write-Output "ninja est deja accessible, rien a ajouter pour lui."
 } else {
@@ -20,6 +21,7 @@ if (Get-Command ninja -ErrorAction SilentlyContinue) {
     if ($ninjaPkg) {
         $ninjaDir = $ninjaPkg.FullName
     } else {
+        $ninjaMissing = $true
         Write-Warning "ninja introuvable. Installe-le avec : winget install Ninja-build.Ninja (puis relance ce script)."
     }
 }
@@ -35,4 +37,8 @@ if ($toAdd.Count -eq 0) {
     [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
     Write-Output "PATH utilisateur mis a jour avec : $($toAdd -join ', ')"
     Write-Output "Ferme et rouvre ton terminal (ou VS Code) pour que le changement prenne effet."
+}
+
+if ($ninjaMissing) {
+    Write-Warning "Setup incomplet : ninja n'est pas installe. 'clerk build'/'clerk test' echoueront tant que 'winget install Ninja-build.Ninja' n'a pas ete lance et ce script relance."
 }

@@ -40,8 +40,12 @@ def rep():
     entree = pd.DataFrame([[0] * len(COLONNES)], columns=COLONNES)
     for champ in request.form:
         if champ in COLONNES:
+            valeur = request.form[champ]
+            # Shape_*/Surface_* viennent de cases à cocher qui ne soumettent jamais que "1"
+            if champ.startswith(("Shape_", "Surface_")) and valeur != "1":
+                return f"<h1>Erreur : valeur invalide pour {champ}.</h1><a href='/form'>Retour</a>", 400
             try:
-                entree[champ] = float(request.form[champ])
+                entree[champ] = float(valeur)
             except ValueError:
                 return f"<h1>Erreur : valeur invalide pour {champ}.</h1><a href='/form'>Retour</a>", 400
 

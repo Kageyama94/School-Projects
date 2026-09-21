@@ -95,10 +95,10 @@ Dans les deux cas, l'IA évite les collisions immédiates et, via un remplissage
 
 - Java 8 ou supérieur
 
-### Compilation
+### Compilation (depuis la racine du projet)
 
 ```bash
-javac -d out app/Main.java controller/GameMode.java controller/TronController.java model/TronModel.java view/TronView.java view/BoardPanel.java
+javac -d out -sourcepath src src/app/Main.java
 ```
 
 ### Exécution

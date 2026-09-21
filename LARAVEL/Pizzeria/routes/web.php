@@ -14,7 +14,7 @@ Route::prefix('pizzeria')->group(function() {
 
     // Inscription
     Route::get('/register', [ConnexionController::class, 'register'])->name('register');
-    Route::post('/register', [ConnexionController::class, 'store']);
+    Route::post('/register', [ConnexionController::class, 'store'])->middleware('throttle:5,1');
 
     // Acces
     Route::get('/login', [ConnexionController::class, 'login'])->name('login');

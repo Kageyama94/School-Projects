@@ -5,6 +5,7 @@ import joblib
 import matplotlib.pyplot as plt
 import os
 import threading
+import time
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -30,6 +31,21 @@ def get_session():
         _local.session = requests.Session()
         _local.session.headers.update({"User-Agent": "Mozilla/5.0 (compatible; mushroom-ml-scraper/1.0)"})
     return _local.session
+
+def fetch(url, timeout=10, max_retries=3):
+    """GET avec retry/backoff ; renvoie None si la page reste inaccessible après max_retries essais."""
+    for attempt in range(max_retries):
+        try:
+            response = get_session().get(url, timeout=timeout)
+            if response.status_code != 200:
+                return None
+            time.sleep(0.2)  # limite le débit pour éviter un bannissement
+            return response
+        except requests.exceptions.RequestException:
+            if attempt < max_retries - 1:
+                time.sleep(2 ** attempt)  # 1s, 2s
+            else:
+                return None
 
 def comestible(soup):
     cat_div = soup.find('div', class_='catlink')
@@ -69,25 +85,22 @@ def surface(soup):
     return '-'.join(v.replace(' ', '').replace('-', '') for v in _champ(soup, 'Surface:'))
 
 def csv_info(url):
+    response = fetch(url)
+    if response is None:
+        return None
     try:
-        response = get_session().get(url, timeout=10)
-        if response.status_code != 200:
-            return None
         soup = BeautifulSoup(response.content, 'html.parser')
         type_ = comestible(soup)
         color_info = color(soup)
         shape_info = shape(soup)
         surface_info = surface(soup)
         return (type_, color_info, shape_info, surface_info)
-    except (requests.exceptions.RequestException, AttributeError):
+    except AttributeError:
         return None
 
 def extract_mushroom_links(url):
-    try:
-        response = get_session().get(url, timeout=10)
-    except requests.exceptions.RequestException:
-        return
-    if response.status_code != 200:
+    response = fetch(url)
+    if response is None:
         return
     soup = BeautifulSoup(response.content, 'html.parser')
     links_seen = set()

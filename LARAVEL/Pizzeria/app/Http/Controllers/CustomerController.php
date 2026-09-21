@@ -32,9 +32,7 @@ class CustomerController extends Controller
                 ->orderByDesc('latest_at')
                 ->paginate(10);
 
-            $customerOrders = Order::whereIn('order_group_id', $groupsPage->pluck('order_group_id'))->get();
-            $groups = $groupsPage->pluck('order_group_id')
-                ->mapWithKeys(fn($groupId) => [$groupId => $customerOrders->where('order_group_id', $groupId)]);
+            $groups = Order::groupsForPage($groupsPage);
         }
 
         return view('customer/home', compact('groups', 'groupsPage', 'customer'));
@@ -56,7 +54,7 @@ class CustomerController extends Controller
             'email' => ['required', 'email', Rule::unique('customers', 'email')->ignore($existingCustomerId)],
             'phone' => 'required',
             'address' => 'required',
-            'postal_code'=> 'required',
+            'postal_code'=> 'required|regex:/^\d{5}$/',
             'pizza' => 'nullable|array',
             'pizza.*' => 'integer|min:0|max:99',
         ]);

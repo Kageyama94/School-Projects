@@ -24,6 +24,7 @@ public class OthelloAI {
     public int[] bestMove(Piece[][] board, Piece player) {
         List<int[]> moves = OthelloModel.staticGetValidMoves(board, player);
         if (moves.isEmpty()) return null;
+        orderMoves(moves, board);
 
         int[] best = null;
         int bestScore = Integer.MIN_VALUE;
@@ -56,6 +57,10 @@ public class OthelloAI {
             return minimax(board, depth - 1, alpha, beta, !maximizing, aiPlayer, opponent);
         }
 
+        // Tri par heuristique de position : essayer d'abord les coups les plus prometteurs
+        // (coins/bords) augmente les coupures alpha-bêta, donc réduit le nombre de nœuds explorés.
+        orderMoves(moves, board);
+
         if (maximizing) {
             int maxEval = Integer.MIN_VALUE;
             for (int[] move : moves) {
@@ -79,6 +84,11 @@ public class OthelloAI {
         }
     }
     
+    private void orderMoves(List<int[]> moves, Piece[][] board) {
+        moves.sort((a, b) -> Integer.compare(
+            positionWeight(board, b[0], b[1]), positionWeight(board, a[0], a[1])));
+    }
+
     private int positionWeight(Piece[][] board, int row, int col) {
         int base = POSITION_WEIGHTS[row][col];
         if (base >= 0) return base;

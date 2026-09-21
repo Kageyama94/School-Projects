@@ -18,19 +18,6 @@ env/
 *.swp
 *~
 
-# Données (ne pas versionner les CSV bruts)
-data/vins.csv
-data/vins_clean.csv
-data/champignons.csv
-
-# Figures générées
-figures/vis_*.png
-figures/correlation.png
-figures/arbre_decision.png
-
-# Modèles entraînés
-modele/*.joblib
-
 # OS
 .DS_Store
 Thumbs.db

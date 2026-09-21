@@ -32,7 +32,7 @@ wine-ml/
 Installation des dépendances :
 
 ```bash
-pip install selenium beautifulsoup4 lxml pandas scikit-learn matplotlib seaborn numpy
+pip install -r requirements.txt
 ```
 
 ---

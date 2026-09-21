@@ -31,7 +31,8 @@ Chaque projet est rangé par catégorie / langage dans ce dépôt.
 
 ```
 School-Projects/
-├── Games/        # Jeux (Java : HexGame, Othello, Tron, Chicks, F1 · OCaml : Super Mario Bros)
+├── JAVA/         # Jeux (HexGame, Othello, Tron, Chicks, F1)
+├── OCAML/        # Jeux (Super Mario Bros)
 ├── PYTHON/       # Projets Machine Learning (Mushroom, Immo, Wine)
 ├── CATALA/       # Projet APL
 ├── LARAVEL/      # Applications web (EDT, Pizzeria, JO)

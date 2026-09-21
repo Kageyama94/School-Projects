@@ -32,12 +32,7 @@ class DriverController extends Controller
                 ->orderByDesc('latest_at')
                 ->paginate(10);
 
-            $historyOrders = Order::with('customers')
-                ->whereIn('order_group_id', $historyPage->pluck('order_group_id'))
-                ->get()
-                ->groupBy('order_group_id');
-            $historyGroups = $historyPage->pluck('order_group_id')
-                ->mapWithKeys(fn($groupId) => [$groupId => $historyOrders->get($groupId, collect())]);
+            $historyGroups = Order::groupsForPage($historyPage, ['customers']);
         }
 
         return view('driver/home', compact('activeGroups', 'historyGroups', 'historyPage'));
