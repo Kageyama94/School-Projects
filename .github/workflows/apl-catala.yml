@@ -16,29 +16,48 @@ jobs:
   tests:
     runs-on: ubuntu-latest
 
-    # Image Docker contenant déjà le compilateur Catala
-    container:
-      image: catalalang/catala:latest
-
     defaults:
       run:
         working-directory: CATALA/APL
 
     steps:
-      # 1. Récupère ton code dans la machine qui exécute la CI
+      # 1. Récupère le code
       - name: Récupération du code
         uses: actions/checkout@v4
 
-      # 2. Lance chaque scope de test
+      # 2. Ninja est requis par clerk (l'outil de build/test de Catala)
+      - name: Installation de ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      # 3. Installe OCaml/opam
+      - name: Installation d'OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5"
+
+      # 4. Met en cache les paquets opam (catala se recompile en ~10 min sans ça)
+      - name: Cache des paquets opam
+        uses: actions/cache@v4
+        with:
+          path: ~/.opam
+          key: opam-${{ runner.os }}-ocaml5-catala1.2.0
+
+      # 5. Installe le compilateur Catala (fournit aussi l'outil clerk)
+      #    Version figée pour que la CI ne casse pas silencieusement si
+      #    une future version de Catala change encore son CLI.
+      - name: Installation de Catala
+        run: opam install catala.1.2.0 --yes
+
+      # 6. Lance chaque scope de test via clerk
       #    (Test23 est volontairement absent : c'est le conflit attendu, voir Question 4)
       - name: Test11 - charges, personne seule, colocation
-        run: catala test-scope Test11 APL.catala_fr
+        run: opam exec -- clerk run -s Test11 APL.catala_fr
 
       - name: Test12 - charges, couple 3 enfants, hors colocation
-        run: catala test-scope Test12 APL.catala_fr
+        run: opam exec -- clerk run -s Test12 APL.catala_fr
 
       - name: Test21 - plafond, personne seule, Zone I, colocation
-        run: catala test-scope Test21 APL.catala_fr
+        run: opam exec -- clerk run -s Test21 APL.catala_fr
 
       - name: Test22 - plafond, couple 3 enfants, Zone II
-        run: catala test-scope Test22 APL.catala_fr
+        run: opam exec -- clerk run -s Test22 APL.catala_fr

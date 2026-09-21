@@ -1,0 +1,3 @@
+# --- Catala / clerk (écrit à la racine du dépôt, quel que soit le dossier d'exécution) ---
+_build/
+_target/

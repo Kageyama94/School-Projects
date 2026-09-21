@@ -17,6 +17,13 @@ déclaration énumération SituationFamiliale:
   -- Couple
 ```
 
+Garde : le nombre de personnes à charge ne peut pas être négatif.
+
+```catala
+champ d'application CalculMontantForfaitaireCharges:
+  assertion nombre_personnes_à_charge >= 0
+```
+
 ### Question 1 : Compléter le code (articles 9 et 16)
 
 Compléter le code Catala pour implémenter l'ensemble des règles
@@ -123,6 +130,13 @@ déclaration énumération ZoneDHabitation:
   -- Zone3
 ```
 
+Garde : le nombre de personnes à charge ne peut pas être négatif.
+
+```catala
+champ d'application CalculPlafondLoyer:
+  assertion nombre_personnes_à_charge >= 0
+```
+
 ### Question 1 : Vérifier → personne seule, 0 enfant, Zone I, colocation = 239,48 €
 
 Vérifier que le code retourne 239,48 €.
@@ -159,6 +173,45 @@ Zone I   : pers. seule 319,30 € | couple 385,09 € | + 1 enfant 435,24 € | 
 Zone II  : pers. seule 278,28 € | couple 340,62 € | + 1 enfant 383,28 € | enfant suppl. 55,79 €
 Zone III : pers. seule 260,82 € | couple 316,17 € | + 1 enfant 354,51 € | enfant suppl. 50,81 €
 
+Chaque colonne du barème est extraite dans une fonction `zone -> montant`
+dédiée, pour éviter de répéter la structure `selon zone sous forme` à
+chaque usage (articles 7, 8 et 16 1°) et pour que les règles se lisent
+comme des formules.
+
+```catala
+déclaration plafond_base_personne_seule contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 319,30€
+    -- Zone2 : 278,28€
+    -- Zone3 : 260,82€
+
+déclaration plafond_base_couple contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 385,09€
+    -- Zone2 : 340,62€
+    -- Zone3 : 316,17€
+
+déclaration plafond_base_premier_enfant contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 435,24€
+    -- Zone2 : 383,28€
+    -- Zone3 : 354,51€
+
+déclaration majoration_enfant_supplementaire contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 63,15€
+    -- Zone2 : 55,79€
+    -- Zone3 : 50,81€
+```
+
 La règle de base couvre tous les cas de l'article 7 dans une seule
 définition étiquetée `base`, afin que les exceptions des articles 8 et
 16 s'appliquent correctement quelle que soit la composition du foyer.
@@ -170,24 +223,12 @@ champ d'application CalculPlafondLoyer:
   définition plafond_loyer_d823_16_2 égal à
     si nombre_personnes_à_charge = 0 alors
       (si situation_familiale sous forme PersonneSeule alors
-        (selon zone sous forme
-         -- Zone1 : 319,30€
-         -- Zone2 : 278,28€
-         -- Zone3 : 260,82€)
+        plafond_base_personne_seule de zone
       sinon
-        (selon zone sous forme
-         -- Zone1 : 385,09€
-         -- Zone2 : 340,62€
-         -- Zone3 : 316,17€))
+        plafond_base_couple de zone)
     sinon
-      (selon zone sous forme
-       -- Zone1 : 435,24€
-       -- Zone2 : 383,28€
-       -- Zone3 : 354,51€)
-      + ((selon zone sous forme
-          -- Zone1 : 63,15€
-          -- Zone2 : 55,79€
-          -- Zone3 : 50,81€)
+      plafond_base_premier_enfant de zone
+      + (majoration_enfant_supplementaire de zone
          * (nombre_personnes_à_charge - 1))
 ```
 
@@ -204,6 +245,27 @@ Zone II  : cas général 250,45 € | âgées/handicapées 208,71 €
 Zone III : cas général 234,74 € | âgées/handicapées 195,62 €
 
 ```catala
+déclaration plafond_chambre_general contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 287,37€
+    -- Zone2 : 250,45€
+    -- Zone3 : 234,74€
+
+déclaration plafond_chambre_agees_handicap contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 239,48€
+    -- Zone2 : 208,71€
+    -- Zone3 : 195,62€
+```
+
+Chaque cas est une exception à la règle `base`, indépendante de la
+taille de la famille :
+
+```catala
 champ d'application CalculPlafondLoyer:
 
   # Chambre, cas général
@@ -212,10 +274,7 @@ champ d'application CalculPlafondLoyer:
     logement_est_chambre
     et non âgées_ou_handicap_adultes_hébergées_onéreux_particuliers
   conséquence égal à
-    selon zone sous forme
-    -- Zone1 : 287,37€
-    -- Zone2 : 250,45€
-    -- Zone3 : 234,74€
+    plafond_chambre_general de zone
 
   # Chambre, personnes âgées ou handicapées
   exception base
@@ -223,10 +282,7 @@ champ d'application CalculPlafondLoyer:
     logement_est_chambre
     et âgées_ou_handicap_adultes_hébergées_onéreux_particuliers
   conséquence égal à
-    selon zone sous forme
-    -- Zone1 : 239,48€
-    -- Zone2 : 208,71€
-    -- Zone3 : 195,62€
+    plafond_chambre_agees_handicap de zone
 ```
 
 #### Arrêté du 27 septembre 2019 - Article 16 1°
@@ -239,6 +295,43 @@ Zone II : pers. seule 208,71 € | couple 255,47 € | + 1 enfant 287,46 € | e
 Zone III : pers. seule 195,62 € | couple 237,13 € | + 1 enfant 265,88 € | enfant suppl. 38,11 €
 
 ```catala
+déclaration plafond_colocation_isole contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 239,48€
+    -- Zone2 : 208,71€
+    -- Zone3 : 195,62€
+
+déclaration plafond_colocation_couple contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 288,82€
+    -- Zone2 : 255,47€
+    -- Zone3 : 237,13€
+
+déclaration plafond_colocation_premier_enfant contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 326,43€
+    -- Zone2 : 287,46€
+    -- Zone3 : 265,88€
+
+déclaration majoration_colocation_enfant_supplementaire contenu argent
+  dépend de zone contenu ZoneDHabitation
+  égal à
+    selon zone sous forme
+    -- Zone1 : 47,36€
+    -- Zone2 : 41,84€
+    -- Zone3 : 38,11€
+```
+
+Chaque cas est une exception à la règle `base`, sur le même découpage
+que l'article 7 :
+
+```catala
 champ d'application CalculPlafondLoyer:
 
   # Colocation, personne seule, 0 enfant
@@ -248,10 +341,7 @@ champ d'application CalculPlafondLoyer:
     et (situation_familiale sous forme PersonneSeule)
     et nombre_personnes_à_charge = 0
   conséquence égal à
-    selon zone sous forme
-    -- Zone1 : 239,48€
-    -- Zone2 : 208,71€
-    -- Zone3 : 195,62€
+    plafond_colocation_isole de zone
 
   # Colocation, couple, 0 enfant
   exception base
@@ -260,10 +350,7 @@ champ d'application CalculPlafondLoyer:
     et (situation_familiale sous forme Couple)
     et nombre_personnes_à_charge = 0
   conséquence égal à
-    selon zone sous forme
-    -- Zone1 : 288,82€
-    -- Zone2 : 255,47€
-    -- Zone3 : 237,13€
+    plafond_colocation_couple de zone
 
   # Colocation, au moins 1 enfant
   exception base
@@ -271,14 +358,8 @@ champ d'application CalculPlafondLoyer:
     colocation
     et nombre_personnes_à_charge >= 1
   conséquence égal à
-    (selon zone sous forme
-    -- Zone1 : 326,43€
-    -- Zone2 : 287,46€
-    -- Zone3 : 265,88€)
-    + ((selon zone sous forme
-        -- Zone1 : 47,36€
-        -- Zone2 : 41,84€
-        -- Zone3 : 38,11€)
+    plafond_colocation_premier_enfant de zone
+    + (majoration_colocation_enfant_supplementaire de zone
        * (nombre_personnes_à_charge - 1))
 ```
 
