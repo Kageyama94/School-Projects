@@ -13,8 +13,8 @@ immo-ml/
 │   ├── annonces.csv           # Données brutes (généré par scrape, non versionné)
 │   └── cities.csv             # Référentiel des communes (latitude / longitude)
 ├── figures/
-│   ├── predictions_knn.png
-│   └── matrice_correlation.png
+│   ├── predictions_knn.png     # Généré par main(), non versionné
+│   └── matrice_correlation.png # Généré par main(), non versionné
 ├── .gitignore
 └── README.md
 ```
@@ -77,22 +77,23 @@ Le scraping cible les annonces de vente d'Île-de-France. Pour chaque fiche, on 
 ### Partie 2 — Nettoyage des données
 
 - Suppression des doublons
-- Complétion des valeurs numériques manquantes par la moyenne de la colonne
 - Filtrage des valeurs aberrantes (surface < 10 m², plus de 10 pièces)
-- Encodage one-hot des colonnes `Type` et `DPE`
+- Encodage one-hot des colonnes `Type` et `DPE` (`drop_first=True`)
 - Enrichissement géographique : jointure avec `cities.csv` pour ajouter latitude / longitude, après normalisation des noms de communes (accents, casse, variantes)
 
 ### Partie 3 — Apprentissage
 
 Split 75 % entraînement / 25 % test (`random_state=49`).
 
+Complétion des valeurs numériques manquantes par la moyenne de la colonne, calculée sur le train uniquement puis appliquée au train et au test (évite toute fuite de données).
+
 Modèles évalués, avec et sans pré-traitement (normalisation MinMax ou standardisation) :
 
 | Modèle | Classe scikit-learn |
 |---|---|
 | Régression Linéaire (LR) | `LinearRegression` |
-| Arbre de Décision (AD) | `DecisionTreeRegressor` — profondeur optimisée |
-| K plus proches voisins (KNN) | `KNeighborsRegressor` — k optimisé (standardisé) |
+| Arbre de Décision (AD) | `DecisionTreeRegressor` — profondeur optimisée par validation croisée (5-fold) sur le train |
+| K plus proches voisins (KNN) | `KNeighborsRegressor` — k optimisé par validation croisée (5-fold) sur le train (standardisé) |
 
 Le KNN étant sensible aux échelles, c'est la version standardisée qui sert de référence.
 
@@ -107,4 +108,4 @@ Analyses complémentaires :
 
 La figure `predictions_knn.png` montre les estimations vs prix réels pour le KNN standardisé.
 
-La dispersion autour de la diagonale illustre que le prix dépend de facteurs non capturés par les seules caractéristiques disponibles (état du bien, étage, prestations, négociation, etc.). La localisation (latitude / longitude) et la surface ressortent comme les attributs les plus corrélés au prix.
+La dispersion autour de la diagonale illustre que le prix dépend de facteurs non capturés par les seules caractéristiques disponibles (état du bien, étage, prestations, négociation, etc.). Le nombre de pièces et la surface ressortent comme les attributs les plus corrélés au prix, suivis du nombre de chambres.

@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from bs4 import BeautifulSoup
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -45,12 +45,20 @@ def getSoup(url, max_retries=3):
                 time.sleep(wait)
             else:
                 raise
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code
+            if (status == 429 or status >= 500) and attempt < max_retries - 1:
+                wait = 2 ** attempt
+                print(f"  ⏱️  Erreur serveur {status}, retry dans {wait}s ({attempt+1}/{max_retries})")
+                time.sleep(wait)
+            else:
+                raise
 
 def prix(soup):
     price_tag = soup.find(class_="product-price")
     if not price_tag:
         raise NonValide("Prix introuvable")
-    price = price_tag.get_text(strip=True).replace("€", "").replace(" ", "")
+    price = price_tag.get_text(strip=True).replace("€", "").replace("\xa0", "").replace(" ", "")
     if not price.isdigit() or int(price) < 10000:
         raise NonValide(f"Prix invalide ou trop bas ({price})")
     return str(price)
@@ -99,7 +107,7 @@ def dpe(soup):
     return caracteristiques(soup, "DEP").split()[0]
 
 def informations(soup):
-    return ",".join([
+    return [
         ville(soup),
         type_bien(soup),
         surface(soup),
@@ -108,11 +116,13 @@ def informations(soup):
         nbrsdb(soup),
         dpe(soup),
         prix(soup)
-    ])
+    ]
 
 def total_pages(url):
     soup = getSoup(url)
     pagination = soup.find("ul", class_="pagination")
+    if not pagination:
+        return 1
     pages = [int(a.get_text(strip=True)) for a in pagination.find_all("a") if a.get_text(strip=True).isdigit()]
     return max(pages) if pages else 1
 
@@ -144,30 +154,31 @@ def scrape_page(url, page, max_page):
                 print(f"  ❌ Page {page} abandonnée après 3 essais")
                 return []
 
-def save(data_list):
+def save(data_list, mode="w"):
     os.makedirs(DATA_DIR, exist_ok=True)
-    with open(os.path.join(DATA_DIR, "annonces.csv"), "w", newline="", encoding="utf-8") as file:
+    with open(os.path.join(DATA_DIR, "annonces.csv"), mode, newline="", encoding="utf-8") as file:
         writer = csv.writer(file)
-        writer.writerow(["Ville", "Type", "Surface", "NbrPieces", "NbrChambres", "NbrSdb", "DPE", "Prix"])
+        if mode == "w":
+            writer.writerow(["Ville", "Type", "Surface", "NbrPieces", "NbrChambres", "NbrSdb", "DPE", "Prix"])
         for data in data_list:
-            writer.writerow(data.split(","))
+            writer.writerow(data)
 
 def scrape(url):
-    data_list = []
+    total = 0
     max_page = total_pages(url)
     start = time.time()
+    save([], mode="w")
 
     try:
         for page in range(1, max_page + 1):
             annonces = scrape_page(url, page, max_page)
-            data_list.extend(annonces)
-            save(data_list)
+            save(annonces, mode="a")
+            total += len(annonces)
     except KeyboardInterrupt:
-        print(f"\n⚠️ Scraping interrompu — {len(data_list)} annonces sauvegardées")
-        save(data_list)
+        print(f"\n⚠️ Scraping interrompu — {total} annonces sauvegardées")
 
     elapsed = time.time() - start
-    print(f"\nScraping terminé : {len(data_list)} annonces en {elapsed:.1f}s")
+    print(f"\nScraping terminé : {total} annonces en {elapsed:.1f}s")
 
 def normaliser(serie):
     serie = serie.apply(lambda x: ''.join(
@@ -176,10 +187,10 @@ def normaliser(serie):
     ))
     return (
         serie.str.lower()
-             .str.replace(r"[\s\-'']", "", regex=True)
+             .str.replace(r"[\s\-'’]", "", regex=True)
              .str.replace(r"(paris).*", "paris", regex=True)
              .str.replace(r"saint(?!s)", "st", regex=True)
-             .str.replace(r".*(saints).*", "saints", regex=True)
+             .str.replace(r"^beautheilsaints$", "saints", regex=True)
              .str.replace(r"(lechesnay).*", "lechesnay", regex=True)
              .str.replace(r"(eragny).*", "eragny", regex=True)
              .str.replace(r".*(courcouronnes)", "courcouronnes", regex=True)
@@ -197,11 +208,6 @@ def main():
 
     for col in ['Surface', 'NbrPieces', 'NbrChambres', 'NbrSdb']:
         annonces[col] = pd.to_numeric(annonces[col].replace('-', pd.NA), errors='coerce')
-        moyenne = annonces[col].mean()
-        if pd.isna(moyenne):
-            moyenne = 0
-        annonces[col] = annonces[col].fillna(round(moyenne))
-        annonces[col] = annonces[col].astype(int)
 
     # Filtrage des valeurs aberrantes
     aberrantes = annonces[ (annonces['Surface'] < 10) | (annonces['NbrPieces'] > 10) ]
@@ -210,7 +216,7 @@ def main():
     annonces = annonces.drop(aberrantes.index)
     print(f"  {len(annonces)} restantes")
 
-    annonces = pd.get_dummies(annonces, columns=["Type", "DPE"], prefix=["Type", "DPE"], dtype=int)
+    annonces = pd.get_dummies(annonces, columns=["Type", "DPE"], prefix=["Type", "DPE"], drop_first=True, dtype=int)
 
     villes = pd.read_csv(os.path.join(DATA_DIR, 'cities.csv'), low_memory=False)
 
@@ -219,17 +225,28 @@ def main():
     villes['nom_standard'] = normaliser(villes['nom_standard'])
 
     villes = villes.drop_duplicates(subset='nom_standard', keep='first')
+    avant_geo = len(annonces)
     annonces_merged = annonces.merge(
         villes[['nom_standard', 'latitude_centre', 'longitude_centre']],
         left_on='Ville', right_on='nom_standard', how='left'
     )
     annonces = annonces_merged.drop(columns=['Ville', 'nom_standard'])
     annonces = annonces.dropna(subset=['latitude_centre', 'longitude_centre'])
-    pd.set_option('display.max_rows', None)
+    print(f"  \n{avant_geo - len(annonces)} annonces supprimées (ville non reconnue dans le référentiel), {len(annonces)} restantes")
 
     X = annonces.drop('Prix', axis=1)
     y = annonces['Prix']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=49)
+
+    # Imputation des valeurs manquantes : moyenne calculée sur le train uniquement (évite la fuite
+    # de données vers le test), puis réappliquée à `annonces` pour les analyses exploratoires plus bas
+    for col in ['Surface', 'NbrPieces', 'NbrChambres', 'NbrSdb']:
+        moyenne = X_train[col].mean()
+        moyenne = 0 if pd.isna(moyenne) else round(moyenne)
+        X_train[col] = X_train[col].fillna(moyenne).astype(int)
+        X_test[col] = X_test[col].fillna(moyenne).astype(int)
+        annonces.loc[X_train.index, col] = X_train[col]
+        annonces.loc[X_test.index, col] = X_test[col]
 
     lr = LinearRegression()
     lr.fit(X_train, y_train)
@@ -243,17 +260,16 @@ def main():
     pipe_lr_std.fit(X_train, y_train)
     r2_lr_std = pipe_lr_std.score(X_test, y_test)
 
-    # recherche du meilleur max_depth
+    # recherche du meilleur max_depth par validation croisée sur le train (le test reste inutilisé jusqu'à l'évaluation finale)
     best_depth = 4
     best_score_ad = -np.inf
     for depth in [3, 4, 5, 6, 8, 10]:
         ad_test = DecisionTreeRegressor(max_depth=depth, random_state=49)
-        ad_test.fit(X_train, y_train)
-        score = ad_test.score(X_test, y_test)
+        score = cross_val_score(ad_test, X_train, y_train, cv=5, scoring='r2').mean()
         if score > best_score_ad:
             best_score_ad = score
             best_depth = depth
-    print(f"  \nMeilleur max_depth : {best_depth} (R²={best_score_ad:.4f})")
+    print(f"  \nMeilleur max_depth : {best_depth} (R² CV moyen={best_score_ad:.4f})")
 
     ad = DecisionTreeRegressor(max_depth=best_depth, random_state=49)
     ad.fit(X_train, y_train)
@@ -267,19 +283,20 @@ def main():
     pipe_ad_std.fit(X_train, y_train)
     r2_ad_std = pipe_ad_std.score(X_test, y_test)
 
-    # recherche du meilleur n_neighbors
+    # recherche du meilleur n_neighbors par validation croisée sur le train (le test reste inutilisé jusqu'à l'évaluation finale)
     best_k = 4
     best_score_knn = -np.inf
     for k in [3, 4, 5, 7, 10, 15, 20]:
         knn_test = make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=k))
-        knn_test.fit(X_train, y_train)
-        score = knn_test.score(X_test, y_test)
+        score = cross_val_score(knn_test, X_train, y_train, cv=5, scoring='r2').mean()
         if score > best_score_knn:
             best_score_knn = score
             best_k = k
-    print(f"  \nMeilleur k : {best_k} (R²={best_score_knn:.4f})")
+    print(f"  \nMeilleur k : {best_k} (R² CV moyen={best_score_knn:.4f})")
 
-    r2_knn = best_score_knn
+    knn = KNeighborsRegressor(n_neighbors=best_k)
+    knn.fit(X_train, y_train)
+    r2_knn = knn.score(X_test, y_test)
 
     pipe_knn_norm = make_pipeline(MinMaxScaler(), KNeighborsRegressor(n_neighbors=best_k))
     pipe_knn_norm.fit(X_train, y_train)
@@ -287,7 +304,7 @@ def main():
 
     pipe_knn_std = make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=best_k))
     pipe_knn_std.fit(X_train, y_train)
-    r2_knn_std = best_score_knn
+    r2_knn_std = pipe_knn_std.score(X_test, y_test)
 
     best_lr = max(r2_lr, r2_lr_norm, r2_lr_std)
     best_ad = max(r2_ad, r2_ad_norm, r2_ad_std)
@@ -313,7 +330,7 @@ def main():
     plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2, label="Diagonale")
     plt.xlabel('y_test')
     plt.ylabel('estimation')
-    plt.title('Question 24')
+    plt.title('Prédiction du prix immobilier - KNN (standardisé)')
     plt.legend()
     os.makedirs(FIGURES_DIR, exist_ok=True)
     plt.savefig(os.path.join(FIGURES_DIR, "predictions_knn.png"), dpi=150, bbox_inches="tight")
@@ -334,8 +351,9 @@ def main():
     print(f"\nScore R² de KNN avant PCA : {r2_knn:.4f}")
     print(f"Score R² de KNN après PCA (2 composantes) : {r2_knn_pca:.4f}")
 
-    # Matrice de corrélation
-    corr_matrix = annonces.corr(numeric_only=True)
+    # Matrice de corrélation, calculée sur le train uniquement (le test ne doit pas influencer
+    # la sélection des attributs ci-dessous)
+    corr_matrix = annonces.loc[X_train.index].corr(numeric_only=True)
     fig, ax = plt.subplots(figsize=(12, 10))
     cax = ax.matshow(corr_matrix, cmap="cividis", vmin=-1, vmax=1)
     fig.colorbar(cax)
@@ -345,7 +363,7 @@ def main():
     ax.set_yticklabels(corr_matrix.columns)
     for (i, j), val in np.ndenumerate(corr_matrix):
         ax.text(j, i, f"{val:.2f}", ha='center', va='center', color="black")
-    plt.title("Matrice de corrélation des attributs")
+    plt.title("Matrice de corrélation des attributs (train)")
     plt.savefig(os.path.join(FIGURES_DIR, "matrice_correlation.png"), dpi=150, bbox_inches="tight")
     plt.close()
 
@@ -360,11 +378,11 @@ def main():
         print(f"{i}. {col} - Corrélation : {correlations[col]:.2f}")
 
     X_top5 = annonces[top5_features]
-    X_train_top5, X_test_top5, y_train_top5, y_test_top5 = train_test_split(X_top5, y, test_size=0.25, random_state=49)
+    X_train_top5, X_test_top5 = X_top5.loc[X_train.index], X_top5.loc[X_test.index]
 
     knn_top5 = KNeighborsRegressor(n_neighbors=best_k)
-    knn_top5.fit(X_train_top5, y_train_top5)
-    r2_knn_top5 = knn_top5.score(X_test_top5, y_test_top5)
+    knn_top5.fit(X_train_top5, y_train)
+    r2_knn_top5 = knn_top5.score(X_test_top5, y_test)
     print(f"\nR² KNN avec les 5 attributs les plus corrélés : {r2_knn_top5:.4f}\n")
 
 if __name__ == "__main__":
