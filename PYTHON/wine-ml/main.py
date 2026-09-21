@@ -2,10 +2,10 @@
 Projet — Estimation du prix d'un vin par apprentissage automatique.
 
 Usage :
-    python main.py scrape    # produit vins.csv
-    python main.py clean     # produit vins_clean.csv
-    python main.py learn     # exécute les expériences
-    python main.py all       # tout enchaîner
+    python main.py scrape [n_workers]  # produit vins.csv (n_workers=4 par défaut)
+    python main.py clean               # produit vins_clean.csv
+    python main.py learn               # exécute les expériences
+    python main.py all [n_workers]     # tout enchaîner
 """
 
 import csv
@@ -173,9 +173,8 @@ def informations(soup):
     robinson = _note("note_jr")
     suckling = _note("note_js")
     prix = content.get("minPrice")
-    
-    champs = [appellation, parker, robinson, suckling, prix]
-    return ",".join("" if v is None else str(v) for v in champs)
+
+    return [appellation, parker, robinson, suckling, prix]
 
 # ---------------------------------------------------------------------------
 # Pagination
@@ -215,14 +214,15 @@ def _scraper_une_fiche(url):
                 _redemarrer_driver_tls()
             
             soup = getsoup(url)
-            ligne = (informations(soup) or ",,,,").split(",")
+            champs = informations(soup) or [None] * 5
+            ligne = ["" if v is None else str(v) for v in champs]
             time.sleep(1.0)
             return ligne if ligne[0].strip() else None
         except (InvalidSessionIdException, WebDriverException, TimeoutException):
             _redemarrer_driver_tls()
     return None
 
-def scraper_bordeaux(chemin_csv = "vins.csv", n_workers = 1):
+def scraper_bordeaux(chemin_csv = "vins.csv", n_workers = 4):
     """Scrape toutes les fiches Bordeaux en parallèle et écrit le CSV."""
     # Phase 1 : collecte des URLs.
     driver = _build_driver()
@@ -349,17 +349,27 @@ def figure_visualisation(y_test, y_pred, titre, chemin):
 def meilleure_profondeur(X_tr, y_tr):
     scores = {h: cross_val_score(DecisionTreeRegressor(max_depth=h, random_state=49),
                                   X_tr, y_tr, cv=5, scoring="r2").mean()
-              for h in (3, 4, 5)}
+              for h in range(3, 11)}
     h = max(scores, key=scores.get)
     print(f"CV : {scores} -> h = {h}")
     return h
 
-def _fabriquer(nom, h):
+def meilleur_k(X_tr, y_tr):
+    pipe = lambda k: make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=k))
+    scores = {k: cross_val_score(pipe(k), X_tr, y_tr, cv=5, scoring="r2").mean()
+              for k in range(3, 16)}
+    k = max(scores, key=scores.get)
+    print(f"CV : {scores} -> k = {k}")
+    return k
+
+def _fabriquer(nom, h, k):
     if nom == "LR":
         return LinearRegression()
     if nom == "AD":
         return DecisionTreeRegressor(max_depth=h, random_state=49)
-    return KNeighborsRegressor(n_neighbors=4)
+    if nom == "RF":
+        return RandomForestRegressor(n_estimators=200, random_state=49)
+    return KNeighborsRegressor(n_neighbors=k)
 
 def apprentissage(chemin_csv="vins_clean.csv"):
     vins = pd.read_csv(chemin_csv)
@@ -382,31 +392,32 @@ def apprentissage(chemin_csv="vins_clean.csv"):
                              f"figures/vis_{nom.replace('+','_')}.png")
         print(f"[LR] {nom:>10s} -> r2 = {s:.4f}")
 
+    # Arbres de décision et forêts aléatoires sont invariants à une mise à
+    # l'échelle monotone par variable : inutile de les réévaluer sous norm/std.
     h = meilleure_profondeur(X_tr, y_tr)
-    for pre in [None, "norm", "std"]:
-        s, _ = evaluer(DecisionTreeRegressor(max_depth=h, random_state=49),
-                       X_tr, y_tr, X_te, y_te, pre)
-        resultats[("AD", pre)] = s
-        nom = "AD" if pre is None else pre + "+AD"
-        print(f"[AD] {nom:>10s} -> r2 = {s:.4f}")
+    s, _ = evaluer(DecisionTreeRegressor(max_depth=h, random_state=49), X_tr, y_tr, X_te, y_te)
+    resultats[("AD", None)] = s
+    print(f"[AD] -> r2 = {s:.4f}")
 
-    for k in (4, 5):
-        s, _ = evaluer(KNeighborsRegressor(n_neighbors=k), X_tr, y_tr, X_te, y_te)
-        print(f"KNN {'k='+str(k):>10s} -> r2 = {s:.4f}")
+    k = meilleur_k(X_tr, y_tr)
     for pre in [None, "norm", "std"]:
-        s, _ = evaluer(KNeighborsRegressor(n_neighbors=4), X_tr, y_tr, X_te, y_te, pre)
+        s, _ = evaluer(KNeighborsRegressor(n_neighbors=k), X_tr, y_tr, X_te, y_te, pre)
         resultats[("KNN", pre)] = s
         nom = "KNN" if pre is None else pre + "+KNN"
         print(f"[KNN] {nom:>10s} -> r2 = {s:.4f}")
 
+    s, _ = evaluer(RandomForestRegressor(n_estimators=200, random_state=49), X_tr, y_tr, X_te, y_te)
+    resultats[("RF", None)] = s
+    print(f"[RF] -> r2 = {s:.4f}")
+
     meilleurs = {m: max(s for (mm, _), s in resultats.items() if mm == m)
-                 for m in ("LR", "AD", "KNN")}
+                 for m in ("LR", "AD", "KNN", "RF")}
     M_nom = max(meilleurs, key=meilleurs.get)
     print(f"\nBest : {meilleurs} => {M_nom}")
 
     pca = PCA(n_components=5).fit(X_tr)
     print(f"\nPCA(5) : variance = {pca.explained_variance_ratio_.sum():.2%}")
-    s, _ = evaluer(_fabriquer(M_nom, h), pca.transform(X_tr), y_tr, pca.transform(X_te), y_te)
+    s, _ = evaluer(_fabriquer(M_nom, h, k), pca.transform(X_tr), y_tr, pca.transform(X_te), y_te)
     print(f"{M_nom} sur PCA -> r2 = {s:.4f}")
 
     corr = vins.corr()
@@ -420,22 +431,16 @@ def apprentissage(chemin_csv="vins_clean.csv"):
     for a in top5:
         print(f"  {a:30s} corr = {corr['Prix'][a]:+.3f}")
     Xtr5, Xte5, ytr5, yte5 = preparer_donnees(vins[top5 + ["Prix"]], log)
-    s, _ = evaluer(_fabriquer(M_nom, h), Xtr5, ytr5, Xte5, yte5)
+    s, _ = evaluer(_fabriquer(M_nom, h, k), Xtr5, ytr5, Xte5, yte5)
     print(f"{M_nom} sur top-5 -> r2 = {s:.4f}")
-
-    print("\nRandom Forest :")
-    for pre in [None, "norm", "std"]:
-        s, _ = evaluer(RandomForestRegressor(n_estimators=200, random_state=49),
-                       X_tr, y_tr, X_te, y_te, pre)
-        nom = "RF" if pre is None else pre + "+RF"
-        print(f"  {nom:>10s} -> r2 = {s:.4f}")
 
 def main(argv):
     if len(argv) < 2 or argv[1] not in {"scrape", "clean", "learn", "all"}:
         print(__doc__)
         return
     if argv[1] in {"scrape", "all"}:
-        scraper_bordeaux("data/vins.csv")
+        n_workers = int(argv[2]) if len(argv) > 2 else 4
+        scraper_bordeaux("data/vins.csv", n_workers=n_workers)
     if argv[1] in {"clean", "all"}:
         nettoyer("data/vins.csv", "data/vins_clean.csv")
     if argv[1] in {"learn", "all"}:
