@@ -22,10 +22,6 @@ env/
 data/vins.csv
 data/vins_clean.csv
 
-# Figures générées
-figures/vis_*.png
-figures/correlation.png
-
 # OS
 .DS_Store
 Thumbs.db
