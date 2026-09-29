@@ -44,7 +44,6 @@ class AdminStudentTest extends TestCase
         $response = $this->put(route('admin.students.update', $student), [
             'first_name' => 'Marie',
             'last_name' => 'Curie',
-            'identifiant' => $user->identifiant,
             'group_id' => $newGroup->id,
         ]);
 
@@ -66,7 +65,6 @@ class AdminStudentTest extends TestCase
         $response = $this->put(route('admin.students.update', $student), [
             'first_name' => $student->first_name,
             'last_name' => $student->last_name,
-            'identifiant' => $user->identifiant,
             'group_id' => '',
         ]);
 
@@ -186,6 +184,22 @@ class AdminStudentTest extends TestCase
 
         $this->get(route('admin.students.index', ['search' => '12345']))
             ->assertViewHas('students', fn ($students) => $students->isEmpty());
+    }
+
+    public function test_students_can_be_searched_by_name(): void
+    {
+        $this->actingAsAdmin();
+        foreach ([['Marie', 'Curie'], ['Pierre', 'Curie'], ['Marie', 'Dupont'], ['Jean', 'Martin']] as [$first, $last]) {
+            Student::factory()->create(['first_name' => $first, 'last_name' => $last]);
+        }
+
+        $names = fn (string $search) => $this->get(route('admin.students.index', ['search' => $search]))
+            ->viewData('students')->getCollection()->map->full_name->sort()->values()->all();
+
+        $this->assertSame(['Marie Curie', 'Pierre Curie'], $names('curie'));
+        $this->assertSame(['Marie Curie'], $names('marie curie'));
+        $this->assertSame(['Marie Curie', 'Marie Dupont'], $names('Marie'));
+        $this->assertSame([], $names('Durand'));
     }
 
     public function test_search_is_kept_across_pages(): void

@@ -18,6 +18,20 @@ class DashboardTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Compte enseignant avec sa fiche et une matière (sans licence : chaque test choisit les siennes).
+     *
+     * @return array{User, Teacher}
+     */
+    private function teacherAccount(?Subject $subject = null): array
+    {
+        $user = User::factory()->teacher()->create();
+        $teacher = Teacher::factory()->create(['user_id' => $user->id]);
+        $teacher->subjects()->attach($subject ?? Subject::factory()->create());
+
+        return [$user, $teacher];
+    }
+
     public function test_admin_dashboard_is_displayed(): void
     {
         $admin = User::factory()->admin()->create();
@@ -70,17 +84,18 @@ class DashboardTest extends TestCase
         $this->actingAs($teacher)->get(route('dashboard'))->assertDontSee(route('admin.licences.index'));
     }
 
-    public function test_teacher_dashboard_lists_licences_that_have_groups_with_full_group_labels(): void
+    public function test_teacher_dashboard_lists_only_their_licences_that_have_groups_with_full_group_labels(): void
     {
-        $user = User::factory()->teacher()->create();
-        $teacher = Teacher::factory()->create(['user_id' => $user->id]);
-        $teacher->subjects()->attach(Subject::factory()->create());
+        [$user, $teacher] = $this->teacherAccount();
         $info = Licence::factory()->create(['name' => 'Informatique']);
+        $physique = Licence::factory()->create(['name' => 'Physique']);
         $maths = Licence::factory()->create(['name' => 'Mathématiques']);
-        Licence::factory()->create(['name' => 'Licence sans groupe']);
+        $empty = Licence::factory()->create(['name' => 'Licence sans groupe']);
+        $teacher->licences()->attach([$info->id, $maths->id, $empty->id]);
         Group::factory()->create(['licence_id' => $maths->id, 'level' => Level::L1, 'name' => 'Groupe A']);
         Group::factory()->create(['licence_id' => $info->id, 'level' => Level::L2, 'name' => 'Groupe A']);
         Group::factory()->create(['licence_id' => $info->id, 'level' => Level::L1, 'name' => 'Groupe B']);
+        Group::factory()->create(['licence_id' => $physique->id, 'level' => Level::L1, 'name' => 'Groupe A']);
 
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
@@ -94,10 +109,8 @@ class DashboardTest extends TestCase
 
     public function test_teacher_dashboard_lists_the_weekly_recap_before_the_group_grid(): void
     {
-        $user = User::factory()->teacher()->create();
-        $teacher = Teacher::factory()->create(['user_id' => $user->id]);
-        $teacher->subjects()->attach(Subject::factory()->create());
-        Group::factory()->create();
+        [$user, $teacher] = $this->teacherAccount();
+        $teacher->licences()->attach(Group::factory()->create()->licence_id);
 
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
@@ -108,10 +121,8 @@ class DashboardTest extends TestCase
 
     public function test_free_slots_have_a_distinct_accessible_label(): void
     {
-        $user = User::factory()->teacher()->create();
-        $teacher = Teacher::factory()->create(['user_id' => $user->id]);
-        $teacher->subjects()->attach(Subject::factory()->create());
-        Group::factory()->create();
+        [$user, $teacher] = $this->teacherAccount();
+        $teacher->licences()->attach(Group::factory()->create()->licence_id);
 
         $content = $this->actingAs($user)->get(route('dashboard'))->assertOk()->getContent();
 
@@ -122,33 +133,30 @@ class DashboardTest extends TestCase
         $this->assertSame(44, substr_count($content, 'aria-label="Ajouter un cours le '));
     }
 
-    public function test_teacher_dashboard_exposes_the_busy_cells_of_groups_and_rooms(): void
+    public function test_teacher_dashboard_exposes_the_busy_cells_of_their_groups_and_of_all_rooms(): void
     {
-        $user = User::factory()->teacher()->create();
-        $teacher = Teacher::factory()->create(['user_id' => $user->id]);
-        $teacher->subjects()->attach(Subject::factory()->create());
+        [$user, $teacher] = $this->teacherAccount();
         $groupA = Group::factory()->create();
         $groupB = Group::factory()->create();
+        $teacher->licences()->attach($groupA->licence_id);
         $room = Room::factory()->create();
         Lesson::factory()->create(['group_id' => $groupA->id, 'room_id' => $room->id, 'day_of_week' => 1, 'start_time' => '08:00', 'end_time' => '09:00']);
         Lesson::factory()->create(['group_id' => $groupA->id, 'room_id' => null, 'day_of_week' => 6, 'start_time' => '11:00', 'end_time' => '12:00']);
         Lesson::factory()->create(['group_id' => $groupB->id, 'room_id' => $room->id, 'day_of_week' => 2, 'start_time' => '14:00', 'end_time' => '15:00']);
 
-        $this->actingAs($user)->get(route('dashboard'))->assertViewHas('scheduler', function (array $scheduler) use ($groupA, $groupB, $room) {
+        $this->actingAs($user)->get(route('dashboard'))->assertViewHas('scheduler', function (array $scheduler) use ($groupA, $room) {
             $group = $scheduler['groupBusyCells']->map->all()->all();
             $rooms = $scheduler['roomBusyCells']->map->all()->all();
 
-            return $group[$groupA->id] === ['1-08:00', '6-11:00']
-                && $group[$groupB->id] === ['2-14:00']
+            // Le groupe B n'est pas dans ses licences : seuls ses créneaux de salle comptent.
+            return $group === [$groupA->id => ['1-08:00', '6-11:00']]
                 && $rooms === [$room->id => ['1-08:00', '2-14:00']];
         });
     }
 
     public function test_teacher_dashboard_does_not_load_a_model_per_lesson(): void
     {
-        $user = User::factory()->teacher()->create();
-        $teacher = Teacher::factory()->create(['user_id' => $user->id]);
-        $teacher->subjects()->attach(Subject::factory()->create());
+        [$user, $teacher] = $this->teacherAccount();
         Lesson::factory(30)->create();
 
         $retrieved = 0;
@@ -163,12 +171,11 @@ class DashboardTest extends TestCase
 
     public function test_teacher_dashboard_shows_the_whole_week_across_groups(): void
     {
-        $user = User::factory()->teacher()->create();
-        $teacher = Teacher::factory()->create(['user_id' => $user->id]);
         $subject = Subject::factory()->create(['name' => 'Algorithmique']);
-        $teacher->subjects()->attach($subject);
+        [$user, $teacher] = $this->teacherAccount($subject);
         $groupA = Group::factory()->create(['name' => 'Groupe Alpha']);
         $groupB = Group::factory()->create(['name' => 'Groupe Beta']);
+        $teacher->licences()->attach([$groupA->licence_id, $groupB->licence_id]);
         Lesson::factory()->create(['teacher_id' => $teacher->id, 'subject_id' => $subject->id, 'group_id' => $groupA->id, 'day_of_week' => 1, 'start_time' => '10:00', 'end_time' => '11:00']);
         Lesson::factory()->create(['teacher_id' => $teacher->id, 'subject_id' => $subject->id, 'group_id' => $groupB->id, 'day_of_week' => 1, 'start_time' => '08:00', 'end_time' => '09:00']);
         Lesson::factory()->create();
@@ -182,11 +189,10 @@ class DashboardTest extends TestCase
 
     public function test_teacher_can_delete_a_lesson_from_the_weekly_recap(): void
     {
-        $user = User::factory()->teacher()->create();
-        $teacher = Teacher::factory()->create(['user_id' => $user->id]);
         $subject = Subject::factory()->create();
-        $teacher->subjects()->attach($subject);
+        [$user, $teacher] = $this->teacherAccount($subject);
         $lesson = Lesson::factory()->create(['teacher_id' => $teacher->id, 'subject_id' => $subject->id]);
+        $teacher->licences()->attach($lesson->group->licence_id);
         $other = Lesson::factory()->create();
 
         $response = $this->actingAs($user)->get(route('dashboard'))->assertOk();
@@ -238,11 +244,10 @@ class DashboardTest extends TestCase
 
     public function test_teacher_dashboard_is_displayed_with_rooms_and_group_lessons(): void
     {
-        $user = User::factory()->teacher()->create();
-        $teacher = Teacher::factory()->create(['user_id' => $user->id]);
         $subject = Subject::factory()->create();
-        $teacher->subjects()->attach($subject);
+        [$user, $teacher] = $this->teacherAccount($subject);
         $group = Group::factory()->create();
+        $teacher->licences()->attach($group->licence_id);
         $room = Room::factory()->create(['name' => 'Salle Curie']);
         Lesson::factory()->create([
             'group_id' => $group->id,
@@ -268,5 +273,16 @@ class DashboardTest extends TestCase
         $this->actingAs($user)->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Aucune matière');
+    }
+
+    public function test_teacher_without_licence_is_told_to_contact_an_admin(): void
+    {
+        [$user, $teacher] = $this->teacherAccount();
+        Group::factory()->create();
+
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Aucune licence ne t\'est encore assignée', false)
+            ->assertDontSee('Ajouter un cours');
     }
 }

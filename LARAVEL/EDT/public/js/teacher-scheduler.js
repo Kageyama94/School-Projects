@@ -26,17 +26,12 @@ function teacherScheduler(config, initial) {
 
             return this.rooms.filter(room => ! (this.roomBusyCells[room.id] ?? []).includes(cellKey));
         },
-        roomTooSmall(room) {
-            const groupSize = this.groups.find(group => group.id === this.selectedGroupId)?.size ?? 0;
-
-            return room.capacity !== null && room.capacity < groupSize;
-        },
         pick(day, slotIndex) {
             this.selectedDay = day;
             this.selectedSlot = slotIndex;
 
             const chosen = this.freeRooms().find(room => String(room.id) === this.selectedRoomId);
-            if (! chosen || this.roomTooSmall(chosen)) {
+            if (! chosen) {
                 this.selectedRoomId = '';
             }
 

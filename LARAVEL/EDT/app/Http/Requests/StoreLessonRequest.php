@@ -4,8 +4,6 @@ namespace App\Http\Requests;
 
 use App\Enums\DayOfWeek;
 use App\Models\Lesson;
-use App\Models\Room;
-use App\Models\Student;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -19,14 +17,24 @@ class StoreLessonRequest extends FormRequest
 
     public function rules(): array
     {
-        $teacherSubjectIds = $this->user()->teacher->subjects()->pluck('subjects.id')->all();
+        $teacher = $this->user()->teacher;
+        $teacherSubjectIds = $teacher->subjects()->pluck('subjects.id')->all();
+        $teacherLicenceIds = $teacher->licences()->pluck('licences.id')->all();
 
         return [
-            'group_id' => ['required', 'exists:groups,id'],
+            // Un enseignant ne programme que dans les groupes des licences qui lui sont assignées.
+            'group_id' => ['required', Rule::exists('groups', 'id')->whereIn('licence_id', $teacherLicenceIds)],
             'subject_id' => ['required', Rule::in($teacherSubjectIds)],
             'room_id' => ['nullable', 'exists:rooms,id'],
             'day_of_week' => ['required', 'integer', Rule::in(array_column(DayOfWeek::schoolDays(), 'value'))],
             'slot' => ['required', 'integer', Rule::in(array_keys(Lesson::timeSlots()))],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'group_id.exists' => 'Ce groupe ne fait pas partie de tes licences.',
         ];
     }
 
@@ -61,18 +69,8 @@ class StoreLessonRequest extends FormRequest
                     return;
                 }
 
-                $room = $this->filled('room_id') ? Room::find($this->integer('room_id')) : null;
-
-                if ($room && Lesson::overlapsFor('room_id', $room->id, $day, $start, $end)) {
+                if ($this->filled('room_id') && Lesson::overlapsFor('room_id', $this->integer('room_id'), $day, $start, $end)) {
                     $validator->errors()->add('room_id', 'Cette salle est déjà occupée sur ce créneau.');
-
-                    return;
-                }
-
-                $groupSize = Student::where('group_id', $this->integer('group_id'))->count();
-
-                if ($room && $room->capacity !== null && $room->capacity < $groupSize) {
-                    $validator->errors()->add('room_id', "Cette salle ({$room->capacity} places) est trop petite pour ce groupe ({$groupSize} étudiants).");
                 }
             },
         ];

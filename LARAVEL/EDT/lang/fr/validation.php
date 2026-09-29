@@ -180,7 +180,6 @@ return [
         'licence_id' => 'licence',
         'level' => 'niveau',
         'color' => 'couleur',
-        'capacity' => 'capacité',
         'type' => 'type',
     ],
 

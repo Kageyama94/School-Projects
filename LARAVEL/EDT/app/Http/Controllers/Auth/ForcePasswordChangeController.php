@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\SignOutOtherDevices;
 use App\Http\Controllers\Controller;
 use App\Rules\NewPassword;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,7 @@ class ForcePasswordChangeController extends Controller
         return view('auth.force-password-change');
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, SignOutOtherDevices $signOutOtherDevices): RedirectResponse
     {
         $validated = $request->validate([
             'password' => ['required', 'confirmed', Password::defaults(), new NewPassword($request->user())],
@@ -26,6 +27,7 @@ class ForcePasswordChangeController extends Controller
             'password' => $validated['password'],
             'must_change_password' => false,
         ])->save();
+        $signOutOtherDevices->handle($request);
 
         return redirect()->route('dashboard');
     }

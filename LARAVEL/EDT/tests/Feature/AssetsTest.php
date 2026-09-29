@@ -17,6 +17,7 @@ class AssetsTest extends TestCase
         $this->assertFileExists(public_path('css/app.css'));
         $this->assertFileExists(public_path('js/alpine.min.js'));
         $this->assertFileExists(public_path('js/teacher-scheduler.js'));
+        $this->assertFileExists(public_path('js/turbo.min.js'));
         $this->assertGreaterThan(10_000, filesize(public_path('css/app.css')));
     }
 
@@ -37,7 +38,8 @@ class AssetsTest extends TestCase
                 ->assertDontSee('fonts.bunny.net');
         }
 
-        $pages[2]->assertSee(asset('js/alpine.min.js'), false);
+        $pages[2]->assertSee(asset('js/alpine.min.js'), false)
+            ->assertSee(asset('js/turbo.min.js'), false);
     }
 
     public function test_pages_use_the_application_branding_instead_of_the_laravel_logo(): void

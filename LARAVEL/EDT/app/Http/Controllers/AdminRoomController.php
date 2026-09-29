@@ -27,7 +27,6 @@ class AdminRoomController extends Controller
     {
         Room::create($request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:rooms'],
-            'capacity' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'type' => ['required', Rule::enum(RoomType::class)],
         ]));
 
@@ -52,7 +51,6 @@ class AdminRoomController extends Controller
     {
         $room->update($request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('rooms')->ignore($room)],
-            'capacity' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'type' => ['required', Rule::enum(RoomType::class)],
         ]));
 

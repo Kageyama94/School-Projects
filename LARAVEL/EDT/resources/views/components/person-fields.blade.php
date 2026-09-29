@@ -13,10 +13,3 @@
     </div>
 </div>
 
-@if ($person?->user)
-    <div>
-        <x-input-label for="identifiant" value="Identifiant de connexion" />
-        <x-text-input id="identifiant" name="identifiant" type="text" inputmode="numeric" maxlength="8" class="mt-1 block w-full" :value="old('identifiant', $person->user->identifiant)" required />
-        <x-input-error :messages="$errors->get('identifiant')" class="mt-2" />
-    </div>
-@endif

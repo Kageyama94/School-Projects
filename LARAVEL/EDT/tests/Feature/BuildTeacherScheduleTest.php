@@ -27,7 +27,8 @@ class BuildTeacherScheduleTest extends TestCase
         $this->assertTrue($data['subjects']->isEmpty());
         $this->assertTrue($data['teacherByCell']->isEmpty());
         $this->assertTrue($data['myLessons']->isEmpty());
-        $this->assertCount(1, $data['scheduler']['groups']);
+        $this->assertFalse($data['hasLicences']);
+        $this->assertCount(0, $data['scheduler']['groups']);
     }
 
     public function test_the_teachers_lessons_are_keyed_by_cell_and_sorted_by_start_time(): void
@@ -51,19 +52,23 @@ class BuildTeacherScheduleTest extends TestCase
     {
         $maths = Licence::factory()->create(['name' => 'Mathématiques']);
         $info = Licence::factory()->create(['name' => 'Informatique']);
-        Licence::factory()->create(['name' => 'Sans groupe']);
+        $empty = Licence::factory()->create(['name' => 'Sans groupe']);
+        $other = Licence::factory()->create(['name' => 'Physique']);
+        $teacher = Teacher::factory()->create();
+        $teacher->licences()->attach([$maths->id, $info->id, $empty->id]);
+        Group::factory()->create(['licence_id' => $other->id]);
         $b = Group::factory()->create(['licence_id' => $maths->id, 'level' => Level::L1, 'name' => 'B']);
         $a = Group::factory()->create(['licence_id' => $info->id, 'level' => Level::L2, 'name' => 'A']);
-        $room = Room::factory()->create(['name' => 'Amphi', 'capacity' => 120]);
+        $room = Room::factory()->create(['name' => 'Amphi']);
         Lesson::factory()->create(['group_id' => $a->id, 'room_id' => $room->id, 'day_of_week' => 3, 'start_time' => '10:00', 'end_time' => '11:00']);
         Lesson::factory()->create(['group_id' => $b->id, 'room_id' => null, 'day_of_week' => 6, 'start_time' => '09:00', 'end_time' => '10:00']);
 
-        $scheduler = app(BuildTeacherSchedule::class)->handle(null)['scheduler'];
+        $scheduler = app(BuildTeacherSchedule::class)->handle($teacher)['scheduler'];
 
         $this->assertSame(['Informatique', 'Mathématiques'], $scheduler['licences']->pluck('name')->all());
         $this->assertSame(['Informatique · L2 · A', 'Mathématiques · L1 · B'], $scheduler['groups']->pluck('label')->all());
         $this->assertSame([$room->id], $scheduler['rooms']->pluck('id')->all());
-        $this->assertSame('Amphi (Salle, 120 places)', $scheduler['rooms'][0]['label']);
+        $this->assertSame('Amphi (Salle)', $scheduler['rooms'][0]['label']);
         $this->assertSame([$a->id => ['3-10:00'], $b->id => ['6-09:00']], $scheduler['groupBusyCells']->map->all()->all());
         $this->assertSame([$room->id => ['3-10:00']], $scheduler['roomBusyCells']->map->all()->all());
         $this->assertSame([1 => 'Lundi', 2 => 'Mardi', 3 => 'Mercredi', 4 => 'Jeudi', 5 => 'Vendredi', 6 => 'Samedi'], $scheduler['dayLabels']->all());

@@ -9,20 +9,13 @@
         <x-input-error :messages="$errors->get('name')" class="mt-2" />
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
-        <div>
-            <x-input-label for="type" value="Type" />
-            <x-select id="type" name="type" required>
-                @foreach ($types as $type)
-                    <option value="{{ $type->value }}" @selected(old('type', $room->type?->value) === $type->value)>{{ $type->label() }}</option>
-                @endforeach
-            </x-select>
-            <x-input-error :messages="$errors->get('type')" class="mt-2" />
-        </div>
-        <div>
-            <x-input-label for="capacity" value="Capacité (places)" />
-            <x-text-input id="capacity" name="capacity" type="number" min="1" class="mt-1 block w-full" :value="old('capacity', $room->capacity)" />
-            <x-input-error :messages="$errors->get('capacity')" class="mt-2" />
-        </div>
+    <div>
+        <x-input-label for="type" value="Type" />
+        <x-select id="type" name="type" required>
+            @foreach ($types as $type)
+                <option value="{{ $type->value }}" @selected(old('type', $room->type?->value) === $type->value)>{{ $type->label() }}</option>
+            @endforeach
+        </x-select>
+        <x-input-error :messages="$errors->get('type')" class="mt-2" />
     </div>
 </x-form-page>

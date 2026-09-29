@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\CreateAccount;
 use App\Enums\DayOfWeek;
 use App\Enums\Level;
 use App\Enums\RoomType;
@@ -115,6 +116,12 @@ class DatabaseSeeder extends Seeder
             fn (Teacher $teacher) => $teacher->subjects()->attach($subject->id)
         ))->values();
 
+        foreach ($teachers as $teacher) {
+            $teacher->licences()->attach(collect($subjectsByLicence)
+                ->filter(fn ($subjects) => $subjects->contains('id', $teacher->subjects->first()->id))
+                ->keys());
+        }
+
         foreach ($groups as $group) {
             Student::factory(5)->create(['group_id' => $group->id]);
         }
@@ -204,6 +211,31 @@ class DatabaseSeeder extends Seeder
             'password' => 'eleve',
         ]));
         $demoStudent->save();
+
+        $this->createMissingAccounts();
+    }
+
+    /**
+     * Donne un compte à chaque enseignant et étudiant qui n'en a pas, comme depuis l'interface admin : identifiant
+     * à partir de 94020000, mot de passe initial nom_prénom à changer à la première connexion. Enseignants et
+     * étudiants sont pris dans un ordre aléatoire : le numéro ne révèle pas le rôle.
+     */
+    private function createMissingAccounts(): void
+    {
+        $createAccount = app(CreateAccount::class);
+
+        $profiles = Teacher::whereNull('user_id')->get()
+            ->map(fn (Teacher $teacher) => [UserRole::Teacher, $teacher])
+            ->concat(Student::whereNull('user_id')->get()->map(fn (Student $student) => [UserRole::Student, $student]))
+            ->shuffle();
+
+        foreach ($profiles as [$role, $profile]) {
+            $createAccount->handle(
+                $role,
+                $profile->only(['first_name', 'last_name']),
+                fn (User $user) => $profile->update(['user_id' => $user->id]),
+            );
+        }
     }
 
     /**

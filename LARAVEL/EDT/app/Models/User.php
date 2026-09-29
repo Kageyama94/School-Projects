@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -107,5 +108,19 @@ class User extends Authenticatable
         $profile = $this->teacher ?? $this->student;
 
         return $profile ? static::defaultPassword($profile->first_name, $profile->last_name) : null;
+    }
+
+    /**
+     * Déconnecte cette personne partout, sauf éventuellement la session en cours : supprime ses sessions
+     * (pilote « database ») et renouvelle le jeton « Se souvenir de moi », sans quoi un appareil mémorisé se reconnecterait seul.
+     */
+    public function endSessions(?string $exceptSessionId = null): void
+    {
+        $this->forceFill(['remember_token' => Str::random(60)])->save();
+
+        DB::table(config('session.table'))
+            ->where('user_id', $this->id)
+            ->when($exceptSessionId, fn ($query) => $query->where('id', '!=', $exceptSessionId))
+            ->delete();
     }
 }

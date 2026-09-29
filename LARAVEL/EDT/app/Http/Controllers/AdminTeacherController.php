@@ -6,6 +6,7 @@ use App\Actions\CreateAccount;
 use App\Actions\TransferLessons;
 use App\Actions\UpdateProfile;
 use App\Enums\UserRole;
+use App\Models\Licence;
 use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\User;
@@ -24,7 +25,7 @@ class AdminTeacherController extends Controller
         $search = $request->string('search')->trim()->toString();
 
         return view('admin.teachers.index', [
-            'teachers' => Teacher::with(['user', 'subjects'])->withCount('lessons')
+            'teachers' => Teacher::with(['user', 'subjects', 'licences'])->withCount('lessons')
                 ->when($search !== '', fn (Builder $query) => $query->matchingName($search))
                 ->orderBy('last_name')
                 ->paginate(self::PER_PAGE)
@@ -38,24 +39,31 @@ class AdminTeacherController extends Controller
 
     public function create(): View
     {
-        return view('admin.teachers.create');
+        return view('admin.teachers.create', [
+            'subjects' => Subject::orderBy('name')->get(),
+            'licences' => Licence::orderBy('name')->get(),
+        ]);
     }
 
     public function store(Request $request, CreateAccount $createAccount): RedirectResponse
     {
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
+            ...UpdateProfile::rules(),
+            ...self::assignmentRules(),
         ]);
 
         $credentials = $createAccount->handle(
             UserRole::Teacher,
             $validated,
-            fn (User $user) => Teacher::create([
-                'user_id' => $user->id,
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-            ]),
+            function (User $user) use ($validated) {
+                $teacher = Teacher::create([
+                    'user_id' => $user->id,
+                    'first_name' => $validated['first_name'],
+                    'last_name' => $validated['last_name'],
+                ]);
+                $teacher->subjects()->sync($validated['subjects'] ?? []);
+                $teacher->licences()->sync($validated['licences'] ?? []);
+            },
         );
 
         return redirect()->route('admin.teachers.index')->with('credentials', ['message' => 'Enseignant créé.', ...$credentials]);
@@ -70,7 +78,7 @@ class AdminTeacherController extends Controller
         ]);
     }
 
-    public function edit(Teacher $teacher): View
+    public function edit(Teacher $teacher, TransferLessons $transferLessons): View
     {
         $lessonSubjects = Subject::withCount(['lessons' => fn ($query) => $query->where('teacher_id', $teacher->id)])
             ->whereHas('lessons', fn ($query) => $query->where('teacher_id', $teacher->id))
@@ -78,30 +86,46 @@ class AdminTeacherController extends Controller
             ->get();
 
         return view('admin.teachers.edit', [
-            'teacher' => $teacher->load(['user', 'subjects']),
+            'teacher' => $teacher->load(['user', 'subjects', 'licences']),
             'subjects' => Subject::orderBy('name')->get(),
+            'licences' => Licence::orderBy('name')->get(),
             'lessonSubjects' => $lessonSubjects,
             // Chargés seulement si le formulaire « Confier ses cours » va s'afficher (l'enseignant a des cours).
-            'replacements' => $lessonSubjects->isEmpty()
-                ? collect()
-                : Teacher::with('subjects')->whereKeyNot($teacher->id)->orderBy('last_name')->get(),
+            'replacements' => $lessonSubjects->isEmpty() ? collect() : $transferLessons->candidates($teacher),
         ]);
+    }
+
+    /**
+     * Matières et licences cochées sur la fiche d'un enseignant.
+     *
+     * @return array<string, array<mixed>>
+     */
+    private static function assignmentRules(): array
+    {
+        return [
+            'subjects' => ['sometimes', 'array'],
+            'subjects.*' => ['exists:subjects,id'],
+            'licences' => ['sometimes', 'array'],
+            'licences.*' => ['exists:licences,id'],
+        ];
     }
 
     public function update(Request $request, Teacher $teacher, UpdateProfile $updateProfile): RedirectResponse
     {
         $validated = $request->validate([
-            ...UpdateProfile::rules($teacher),
-            'subjects' => ['sometimes', 'array'],
-            'subjects.*' => ['exists:subjects,id'],
+            ...UpdateProfile::rules(),
+            ...self::assignmentRules(),
         ]);
         $subjects = $validated['subjects'] ?? [];
+        $licences = $validated['licences'] ?? [];
 
-        $this->ensureRemovedSubjectsHaveNoLessons($teacher, $subjects);
+        $this->ensureRemovedHaveNoLessons($teacher, 'subjects', $subjects);
+        $this->ensureRemovedHaveNoLessons($teacher, 'licences', $licences);
 
-        DB::transaction(function () use ($updateProfile, $teacher, $validated, $subjects) {
+        DB::transaction(function () use ($updateProfile, $teacher, $validated, $subjects, $licences) {
             $updateProfile->handle($teacher, $validated);
             $teacher->subjects()->sync($subjects);
+            $teacher->licences()->sync($licences);
         });
 
         return redirect()->route('admin.teachers.index')->with('success', 'Enseignant mis à jour.');
@@ -129,26 +153,30 @@ class AdminTeacherController extends Controller
     }
 
     /**
-     * Une matière ne peut être retirée que si l'enseignant n'y a plus de cours (il faut d'abord les confier à un autre).
+     * Une matière ou une licence ne peut être retirée que si l'enseignant n'y a plus de cours
+     * (il faut d'abord les confier à un autre).
      *
-     * @param  array<int, int|string>  $newSubjectIds
+     * @param  'subjects'|'licences'  $relation
+     * @param  array<int, int|string>  $keptIds
      *
      * @throws ValidationException
      */
-    private function ensureRemovedSubjectsHaveNoLessons(Teacher $teacher, array $newSubjectIds): void
+    private function ensureRemovedHaveNoLessons(Teacher $teacher, string $relation, array $keptIds): void
     {
-        $removedIds = $teacher->subjects()->pluck('subjects.id')->diff($newSubjectIds);
+        $assigned = $teacher->{$relation}();
+        $removedIds = $assigned->pluck($assigned->getRelated()->getQualifiedKeyName())->diff($keptIds);
 
-        $inUse = Subject::whereIn('id', $removedIds)
+        $inUse = $assigned->getRelated()->newQuery()
+            ->whereKey($removedIds)
             ->withCount(['lessons' => fn ($query) => $query->where('teacher_id', $teacher->id)])
             ->get()
-            ->filter(fn (Subject $subject) => $subject->lessons_count > 0);
+            ->filter(fn ($model) => $model->lessons_count > 0);
 
         if ($inUse->isNotEmpty()) {
-            $list = $inUse->map(fn (Subject $subject) => "{$subject->name} ({$subject->lessons_count} cours)")->join(', ');
+            $list = $inUse->map(fn ($model) => "{$model->name} ({$model->lessons_count} cours)")->join(', ');
 
             throw ValidationException::withMessages([
-                'subjects' => "Impossible de retirer : {$list}. Confie d'abord ces cours à un autre enseignant (formulaire ci-dessous).",
+                $relation => "Impossible de retirer : {$list}. Confie d'abord ces cours à un autre enseignant (formulaire ci-dessous).",
             ]);
         }
     }

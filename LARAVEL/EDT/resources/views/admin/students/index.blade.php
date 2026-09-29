@@ -1,7 +1,7 @@
 <x-page :title="__('Étudiants')">
     <x-card>
         <x-list-header title="Étudiants" :create-route="route('admin.students.create')" create-label="+ Ajouter un étudiant" />
-        <x-search-form :action="route('admin.students.index')" :search="$search" placeholder="Rechercher un identifiant" inputmode="numeric" />
+        <x-search-form :action="route('admin.students.index')" :search="$search" placeholder="Rechercher un nom ou un identifiant" />
         <table class="w-full text-sm text-left">
             <thead>
                 <tr class="text-gray-500 dark:text-gray-400">

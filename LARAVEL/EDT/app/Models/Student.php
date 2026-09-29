@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\MatchesName;
 use Database\Factories\StudentFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,6 +13,8 @@ class Student extends Model
 {
     /** @use HasFactory<StudentFactory> */
     use HasFactory;
+
+    use MatchesName;
 
     protected $fillable = ['user_id', 'group_id', 'first_name', 'last_name'];
 

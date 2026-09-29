@@ -119,7 +119,7 @@ class CalendarTest extends TestCase
         $teacherUser = User::factory()->teacher()->create();
         $teacher = Teacher::factory()->create(['user_id' => $teacherUser->id]);
         $teacher->subjects()->attach(Subject::factory()->create());
-        Group::factory()->create();
+        $teacher->licences()->attach(Group::factory()->create()->licence_id);
 
         foreach ([$student, $teacherUser] as $user) {
             $this->actingAs($user)->get(route('dashboard'))

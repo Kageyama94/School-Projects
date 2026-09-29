@@ -13,7 +13,7 @@ class Room extends Model
     /** @use HasFactory<RoomFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'capacity', 'type'];
+    protected $fillable = ['name', 'type'];
 
     protected function casts(): array
     {

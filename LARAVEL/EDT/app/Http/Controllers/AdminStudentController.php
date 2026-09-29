@@ -23,10 +23,12 @@ class AdminStudentController extends Controller
 
         return view('admin.students.index', [
             'students' => Student::with(['user', 'group.licence'])
-                ->when($search !== '', fn (Builder $query) => $query->whereHas(
+                // Des chiffres : début d'identifiant ; sinon : prénom et nom.
+                ->when(ctype_digit($search), fn (Builder $query) => $query->whereHas(
                     'user',
                     fn (Builder $user) => $user->where('identifiant', 'like', $search.'%')
                 ))
+                ->when($search !== '' && ! ctype_digit($search), fn (Builder $query) => $query->matchingName($search))
                 ->orderBy('last_name')
                 ->paginate(self::PER_PAGE)
                 ->withQueryString(),
@@ -42,8 +44,7 @@ class AdminStudentController extends Controller
     public function store(Request $request, CreateAccount $createAccount): RedirectResponse
     {
         $validated = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
+            ...UpdateProfile::rules(),
             'group_id' => ['required', 'exists:groups,id'],
         ]);
 
@@ -72,7 +73,7 @@ class AdminStudentController extends Controller
     public function update(Request $request, Student $student, UpdateProfile $updateProfile): RedirectResponse
     {
         $validated = $request->validate([
-            ...UpdateProfile::rules($student),
+            ...UpdateProfile::rules(),
             'group_id' => ['nullable', 'exists:groups,id'],
         ]);
 

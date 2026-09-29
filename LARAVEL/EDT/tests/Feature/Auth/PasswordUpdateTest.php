@@ -5,7 +5,10 @@ namespace Tests\Feature\Auth;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PasswordUpdateTest extends TestCase
@@ -29,6 +32,63 @@ class PasswordUpdateTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertTrue(Hash::check('new-password1', $user->refresh()->password));
+    }
+
+    public function test_changing_the_password_signs_out_the_other_devices_only(): void
+    {
+        $user = User::factory()->create(['remember_token' => 'ancien-jeton']);
+        $other = User::factory()->create();
+        $current = Str::random(40);
+        foreach ([[$user->id, $current], [$user->id, 'autre-appareil'], [$other->id, 'autre-personne']] as [$userId, $id]) {
+            DB::table('sessions')->insert(['id' => $id, 'user_id' => $userId, 'payload' => '', 'last_activity' => time()]);
+        }
+
+        $this->actingAs($user)
+            ->withCookie(config('session.cookie'), $current)
+            ->from('/profile')
+            ->put('/password', [
+                'password' => 'new-password1',
+                'password_confirmation' => 'new-password1',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('sessions', ['id' => $current]);
+        $this->assertDatabaseMissing('sessions', ['id' => 'autre-appareil']);
+        $this->assertDatabaseHas('sessions', ['id' => 'autre-personne']);
+        $this->assertNotSame('ancien-jeton', $user->refresh()->remember_token);
+    }
+
+    public function test_the_current_device_keeps_remember_me_after_a_password_change(): void
+    {
+        $user = User::factory()->create(['remember_token' => 'ancien-jeton']);
+        $recaller = Auth::guard()->getRecallerName();
+
+        $response = $this->actingAs($user)
+            ->withCookie($recaller, "{$user->id}|ancien-jeton|{$user->password}")
+            ->from('/profile')
+            ->put('/password', [
+                'password' => 'new-password1',
+                'password_confirmation' => 'new-password1',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $user->refresh();
+        $this->assertNotSame('ancien-jeton', $user->remember_token);
+        // Le cookie renvoyé porte le nouveau jeton : l'appareil reste mémorisé.
+        $this->assertStringContainsString("|{$user->remember_token}|", $response->getCookie($recaller)->getValue());
+    }
+
+    public function test_no_remember_me_cookie_is_created_when_there_was_none(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from('/profile')
+            ->put('/password', [
+                'password' => 'new-password1',
+                'password_confirmation' => 'new-password1',
+            ])
+            ->assertCookieMissing(Auth::guard()->getRecallerName());
     }
 
     public function test_password_cannot_be_updated_to_the_current_or_initial_one(): void

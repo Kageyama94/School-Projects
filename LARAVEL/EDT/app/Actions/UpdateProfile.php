@@ -5,39 +5,29 @@ namespace App\Actions;
 use App\Models\Student;
 use App\Models\Teacher;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 
 class UpdateProfile
 {
     /**
-     * Règles communes à la modification d'une fiche : prénom, nom et identifiant de connexion (si un compte existe).
+     * Règles communes à la création et à la modification d'une fiche : prénom et nom. L'identifiant de connexion n'est pas modifiable.
      *
      * @return array<string, array<mixed>>
      */
-    public static function rules(Teacher|Student $person): array
+    public static function rules(): array
     {
-        $rules = [
+        return [
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
         ];
-
-        if ($person->user_id) {
-            $rules['identifiant'] = ['required', 'regex:/^\d+$/', 'max:8', Rule::unique('users')->ignore($person->user_id)];
-        }
-
-        return $rules;
     }
 
     /**
-     * Enregistre la fiche et garde le nom d'affichage et l'identifiant du compte synchronisés.
+     * Enregistre la fiche et garde le nom d'affichage du compte synchronisé.
      */
     public function handle(Teacher|Student $person, array $validated): void
     {
         $person->update(Arr::only($validated, ['first_name', 'last_name', 'group_id']));
 
-        $person->user?->update([
-            'name' => "{$validated['first_name']} {$validated['last_name']}",
-            'identifiant' => $validated['identifiant'],
-        ]);
+        $person->user?->update(['name' => "{$validated['first_name']} {$validated['last_name']}"]);
     }
 }

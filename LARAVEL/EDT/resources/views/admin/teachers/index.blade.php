@@ -8,6 +8,7 @@
                     <th class="py-1">Nom</th>
                     <th class="py-1">Identifiant</th>
                     <th class="py-1">Matières</th>
+                    <th class="py-1">Licences</th>
                     <th class="py-1">Cours</th>
                     <th class="py-1"></th>
                 </tr>
@@ -18,6 +19,7 @@
                         <td class="py-2 text-gray-900 dark:text-gray-100">{{ $teacher->full_name }}</td>
                         <td class="py-2 text-gray-600 dark:text-gray-400">{{ $teacher->user?->identifiant ?? '—' }}</td>
                         <td class="py-2 text-gray-600 dark:text-gray-400">{{ $teacher->subjects->pluck('name')->join(', ') ?: '—' }}</td>
+                        <td class="py-2 text-gray-600 dark:text-gray-400">{{ $teacher->licences->pluck('name')->join(', ') ?: '—' }}</td>
                         <td class="py-2 text-gray-600 dark:text-gray-400">{{ $teacher->lessons_count }}</td>
                         <td class="py-2 text-right space-x-3 whitespace-nowrap">
                             <a href="{{ route('admin.teachers.show', $teacher) }}" class="text-xs underline text-gray-500 dark:text-gray-400">Emploi du temps</a>
@@ -33,7 +35,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="py-2 text-gray-400">Aucun enseignant.</td></tr>
+                    <tr><td colspan="6" class="py-2 text-gray-400">Aucun enseignant.</td></tr>
                 @endforelse
             </tbody>
         </table>

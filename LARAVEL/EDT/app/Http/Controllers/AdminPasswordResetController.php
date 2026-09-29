@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 
 class AdminPasswordResetController extends Controller
 {
@@ -22,8 +21,7 @@ class AdminPasswordResetController extends Controller
             'must_change_password' => true,
         ])->save();
 
-        // Ferme les sessions déjà ouvertes de cette personne (pilote de session « database »).
-        DB::table(config('session.table'))->where('user_id', $user->id)->delete();
+        $user->endSessions();
 
         return redirect()->back()->with('credentials', ['message' => 'Mot de passe réinitialisé.', 'password' => $password]);
     }

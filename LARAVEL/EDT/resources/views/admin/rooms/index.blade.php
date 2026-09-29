@@ -6,7 +6,6 @@
                 <tr class="text-gray-500 dark:text-gray-400">
                     <th class="py-1">Nom</th>
                     <th class="py-1">Type</th>
-                    <th class="py-1">Capacité</th>
                     <th class="py-1">Cours</th>
                     <th class="py-1"></th>
                 </tr>
@@ -16,7 +15,6 @@
                     <tr class="border-t border-gray-100 dark:border-gray-700">
                         <td class="py-2 text-gray-900 dark:text-gray-100">{{ $room->name }}</td>
                         <td class="py-2 text-gray-600 dark:text-gray-400">{{ $room->type->label() }}</td>
-                        <td class="py-2 text-gray-600 dark:text-gray-400">{{ $room->capacity ?? '—' }}</td>
                         <td class="py-2 text-gray-600 dark:text-gray-400">{{ $room->lessons_count }}</td>
                         <td class="py-2 text-right space-x-3 whitespace-nowrap">
                             <a href="{{ route('admin.rooms.show', $room) }}" class="text-xs underline text-gray-500 dark:text-gray-400">Emploi du temps</a>
@@ -25,7 +23,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="py-2 text-gray-400">Aucune salle.</td></tr>
+                    <tr><td colspan="4" class="py-2 text-gray-400">Aucune salle.</td></tr>
                 @endforelse
             </tbody>
         </table>

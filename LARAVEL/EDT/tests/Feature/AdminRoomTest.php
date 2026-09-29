@@ -40,26 +40,12 @@ class AdminRoomTest extends TestCase
         $this->post(route('admin.rooms.store'), [
             'name' => 'Amphi Curie',
             'type' => RoomType::Informatique->value,
-            'capacity' => 120,
         ])->assertRedirect(route('admin.rooms.index'));
 
         $this->assertDatabaseHas('rooms', [
             'name' => 'Amphi Curie',
             'type' => RoomType::Informatique->value,
-            'capacity' => 120,
         ]);
-    }
-
-    public function test_room_capacity_is_optional_but_must_be_positive(): void
-    {
-        $this->actingAsAdmin();
-
-        $this->post(route('admin.rooms.store'), ['name' => 'Salle sans capacité', 'type' => 'salle', 'capacity' => ''])
-            ->assertSessionHasNoErrors();
-        $this->post(route('admin.rooms.store'), ['name' => 'Salle zéro', 'type' => 'salle', 'capacity' => 0])
-            ->assertSessionHasErrors('capacity');
-
-        $this->assertDatabaseHas('rooms', ['name' => 'Salle sans capacité', 'capacity' => null]);
     }
 
     public function test_room_name_must_be_unique_and_type_valid(): void
@@ -74,17 +60,15 @@ class AdminRoomTest extends TestCase
     public function test_admin_can_update_a_room(): void
     {
         $this->actingAsAdmin();
-        $room = Room::factory()->create(['name' => 'Salle A', 'capacity' => 20]);
+        $room = Room::factory()->create(['name' => 'Salle A']);
 
         $this->put(route('admin.rooms.update', $room), [
             'name' => 'Salle A',
             'type' => RoomType::Gymnase->value,
-            'capacity' => 40,
         ])->assertRedirect(route('admin.rooms.index'));
 
         $room->refresh();
         $this->assertSame(RoomType::Gymnase, $room->type);
-        $this->assertSame(40, $room->capacity);
     }
 
     public function test_admin_can_delete_an_unused_room(): void

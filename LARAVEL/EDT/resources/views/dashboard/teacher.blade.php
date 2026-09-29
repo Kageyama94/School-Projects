@@ -1,4 +1,9 @@
 <x-page :title="__('Mon emploi du temps')">
+    @push('head')
+        {{-- Après l'ajout ou le retrait d'un cours (retour sur cette même page), Turbo garde la position de défilement. --}}
+        <meta name="turbo-refresh-scroll" content="preserve">
+    @endpush
+
     @if (! $teacher)
         <x-card class="text-gray-600 dark:text-gray-400">
             Ton compte n'est pas encore rattaché à une fiche enseignant. Contacte un administrateur.
@@ -7,9 +12,13 @@
         <x-card class="text-gray-600 dark:text-gray-400">
             Aucune matière ne t'est encore assignée. Contacte un administrateur.
         </x-card>
+    @elseif (! $hasLicences)
+        <x-card class="text-gray-600 dark:text-gray-400">
+            Aucune licence ne t'est encore assignée. Contacte un administrateur.
+        </x-card>
     @elseif ($groups->isEmpty())
         <x-card class="text-gray-600 dark:text-gray-400">
-            Aucun groupe n'existe encore. Contacte un administrateur.
+            Tes licences n'ont encore aucun groupe. Contacte un administrateur.
         </x-card>
     @else
         @php
@@ -138,7 +147,7 @@
                             <x-select id="room_id" name="room_id" @change="selectedRoomId = $event.target.value">
                                 <option value="">—</option>
                                 <template x-for="room in freeRooms()" :key="room.id">
-                                    <option :value="room.id" :selected="String(room.id) === selectedRoomId" :disabled="roomTooSmall(room)" x-text="room.label + (roomTooSmall(room) ? ' — trop petite' : '')"></option>
+                                    <option :value="room.id" :selected="String(room.id) === selectedRoomId" x-text="room.label"></option>
                                 </template>
                             </x-select>
                             <p x-show="freeRooms().length === 0" x-cloak class="mt-1 text-xs text-amber-700 dark:text-amber-400">Aucune salle libre à ce créneau.</p>
@@ -160,5 +169,4 @@
         </div>
     @endif
 
-    <script src="{{ asset('js/teacher-scheduler.js') }}"></script>
 </x-page>

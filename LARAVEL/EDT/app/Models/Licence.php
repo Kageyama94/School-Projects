@@ -20,6 +20,11 @@ class Licence extends Model
         return $this->hasMany(Group::class);
     }
 
+    public function lessons(): HasManyThrough
+    {
+        return $this->hasManyThrough(Lesson::class, Group::class);
+    }
+
     public function students(): HasManyThrough
     {
         return $this->hasManyThrough(Student::class, Group::class);

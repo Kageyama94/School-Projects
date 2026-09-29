@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Group;
 use App\Models\Lesson;
 use App\Models\Room;
-use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\User;
@@ -28,11 +27,22 @@ class LessonTest extends TestCase
         return $teacher;
     }
 
+    /**
+     * Crée un groupe dans une licence assignée à l'enseignant connecté.
+     */
+    private function groupOfMyLicences(): Group
+    {
+        $group = Group::factory()->create();
+        auth()->user()->teacher->licences()->attach($group->licence_id);
+
+        return $group;
+    }
+
     public function test_teacher_can_create_a_lesson(): void
     {
         $subject = Subject::factory()->create();
         $teacher = $this->actingAsTeacher($subject);
-        $group = Group::factory()->create();
+        $group = $this->groupOfMyLicences();
 
         $response = $this->post(route('lessons.store'), [
             'group_id' => $group->id,
@@ -49,6 +59,44 @@ class LessonTest extends TestCase
             'subject_id' => $subject->id,
             'day_of_week' => 1,
         ]);
+    }
+
+    public function test_teacher_cannot_create_a_lesson_for_another_teacher(): void
+    {
+        $subject = Subject::factory()->create();
+        $teacher = $this->actingAsTeacher($subject);
+        $colleague = Teacher::factory()->create();
+        $colleague->subjects()->attach($subject);
+        $group = $this->groupOfMyLicences();
+
+        $this->post(route('lessons.store'), [
+            'group_id' => $group->id,
+            'subject_id' => $subject->id,
+            'teacher_id' => $colleague->id,
+            'room_id' => '',
+            'day_of_week' => 1,
+            'slot' => 0,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame($teacher->id, Lesson::sole()->teacher_id);
+    }
+
+    public function test_teacher_cannot_create_a_lesson_outside_their_licences(): void
+    {
+        $subject = Subject::factory()->create();
+        $this->actingAsTeacher($subject);
+        $this->groupOfMyLicences();
+        $otherGroup = Group::factory()->create();
+
+        $this->post(route('lessons.store'), [
+            'group_id' => $otherGroup->id,
+            'subject_id' => $subject->id,
+            'room_id' => '',
+            'day_of_week' => 1,
+            'slot' => 0,
+        ])->assertSessionHasErrors(['group_id' => 'Ce groupe ne fait pas partie de tes licences.']);
+
+        $this->assertDatabaseCount('lessons', 0);
     }
 
     public function test_non_teacher_cannot_create_a_lesson(): void
@@ -71,7 +119,7 @@ class LessonTest extends TestCase
     public function test_teacher_cannot_use_a_subject_not_assigned_to_them(): void
     {
         $this->actingAsTeacher();
-        $group = Group::factory()->create();
+        $group = $this->groupOfMyLicences();
         $otherSubject = Subject::factory()->create();
 
         $response = $this->post(route('lessons.store'), [
@@ -89,7 +137,7 @@ class LessonTest extends TestCase
     {
         $subject = Subject::factory()->create();
         $teacher = $this->actingAsTeacher($subject);
-        $group = Group::factory()->create();
+        $group = $this->groupOfMyLicences();
 
         Lesson::factory()->create([
             'teacher_id' => $teacher->id,
@@ -114,7 +162,7 @@ class LessonTest extends TestCase
     {
         $subject = Subject::factory()->create();
         $teacher = $this->actingAsTeacher($subject);
-        $group = Group::factory()->create();
+        $group = $this->groupOfMyLicences();
 
         Lesson::factory()->create([
             'group_id' => $group->id,
@@ -139,7 +187,7 @@ class LessonTest extends TestCase
     {
         $subject = Subject::factory()->create();
         $this->actingAsTeacher($subject);
-        $group = Group::factory()->create();
+        $group = $this->groupOfMyLicences();
         $room = Room::factory()->create();
 
         Lesson::factory()->create([
@@ -160,30 +208,11 @@ class LessonTest extends TestCase
         $response->assertSessionHasErrors('room_id');
     }
 
-    public function test_room_must_be_large_enough_for_the_group(): void
-    {
-        $subject = Subject::factory()->create();
-        $this->actingAsTeacher($subject);
-        $group = Group::factory()->create();
-        Student::factory(10)->create(['group_id' => $group->id]);
-        $room = Room::factory()->create(['capacity' => 5]);
-
-        $response = $this->post(route('lessons.store'), [
-            'group_id' => $group->id,
-            'subject_id' => $subject->id,
-            'room_id' => $room->id,
-            'day_of_week' => 1,
-            'slot' => 0,
-        ]);
-
-        $response->assertSessionHasErrors('room_id');
-    }
-
     public function test_a_slot_taken_between_validation_and_insert_returns_a_validation_error(): void
     {
         $subject = Subject::factory()->create();
         $teacher = $this->actingAsTeacher($subject);
-        $group = Group::factory()->create();
+        $group = $this->groupOfMyLicences();
         $otherGroup = Group::factory()->create();
 
         Lesson::creating(function () use ($teacher, $subject, $otherGroup) {
@@ -213,7 +242,7 @@ class LessonTest extends TestCase
     {
         $subject = Subject::factory()->create();
         $this->actingAsTeacher($subject);
-        $group = Group::factory()->create();
+        $group = $this->groupOfMyLicences();
 
         $response = $this->post(route('lessons.store'), [
             'group_id' => $group->id,
@@ -231,7 +260,7 @@ class LessonTest extends TestCase
     {
         $subject = Subject::factory()->create();
         $this->actingAsTeacher($subject);
-        $group = Group::factory()->create();
+        $group = $this->groupOfMyLicences();
 
         $response = $this->post(route('lessons.store'), [
             'group_id' => $group->id,
@@ -249,7 +278,7 @@ class LessonTest extends TestCase
     {
         $subject = Subject::factory()->create();
         $teacher = $this->actingAsTeacher($subject);
-        $group = Group::factory()->create();
+        $group = $this->groupOfMyLicences();
 
         $response = $this->post(route('lessons.store'), [
             'group_id' => $group->id,

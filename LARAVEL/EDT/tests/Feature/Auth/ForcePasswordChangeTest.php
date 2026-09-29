@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
@@ -60,6 +61,18 @@ class ForcePasswordChangeTest extends TestCase
         $user->refresh();
         $this->assertFalse($user->must_change_password);
         $this->assertTrue(Hash::check('un-nouveau-mdp1', $user->password));
+    }
+
+    public function test_the_first_password_change_signs_out_the_other_devices(): void
+    {
+        $user = $this->teacherWhoMustChangePassword();
+        $user->forceFill(['remember_token' => 'ancien-jeton'])->save();
+        DB::table('sessions')->insert(['id' => 'autre-appareil', 'user_id' => $user->id, 'payload' => '', 'last_activity' => time()]);
+
+        $this->changePassword($user, 'un-nouveau-mdp1')->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('sessions', ['id' => 'autre-appareil']);
+        $this->assertNotSame('ancien-jeton', $user->refresh()->remember_token);
     }
 
     public function test_new_password_cannot_be_the_initial_one(): void

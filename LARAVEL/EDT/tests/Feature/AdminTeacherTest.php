@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Lesson;
+use App\Models\Licence;
 use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\User;
@@ -32,6 +33,43 @@ class AdminTeacherTest extends TestCase
         $this->assertTrue($teacher->subjects->isEmpty());
     }
 
+    public function test_admin_can_create_a_teacher_with_subjects_and_licences(): void
+    {
+        $this->actingAsAdmin();
+        $subject = Subject::factory()->create(['name' => 'Algorithmique']);
+        $licence = Licence::factory()->create(['name' => 'Informatique']);
+
+        $this->get(route('admin.teachers.create'))
+            ->assertOk()
+            ->assertSee('Algorithmique')
+            ->assertSee('Informatique');
+
+        $this->post(route('admin.teachers.store'), [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'subjects' => [$subject->id],
+            'licences' => [$licence->id],
+        ])->assertSessionHasNoErrors()->assertRedirect(route('admin.teachers.index'));
+
+        $teacher = Teacher::where('last_name', 'Lovelace')->firstOrFail();
+        $this->assertSame([$subject->id], $teacher->subjects()->pluck('subjects.id')->all());
+        $this->assertSame([$licence->id], $teacher->licences()->pluck('licences.id')->all());
+    }
+
+    public function test_teacher_creation_rejects_unknown_subjects_or_licences(): void
+    {
+        $this->actingAsAdmin();
+
+        $this->post(route('admin.teachers.store'), [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'subjects' => [999],
+            'licences' => [999],
+        ])->assertSessionHasErrors(['subjects.0', 'licences.0']);
+
+        $this->assertDatabaseCount('teachers', 0);
+    }
+
     public function test_admin_can_save_a_teacher_with_zero_subjects(): void
     {
         $this->actingAsAdmin();
@@ -58,7 +96,7 @@ class AdminTeacherTest extends TestCase
         $response = $this->put(route('admin.teachers.update', $teacher), [
             'first_name' => 'Jeanne',
             'last_name' => 'Dupont',
-            'identifiant' => '94020099',
+            'identifiant' => '94020099', // ignoré : l'identifiant d'un enseignant n'est pas modifiable
             'subjects' => [$newSubject->id],
         ]);
 
@@ -69,7 +107,7 @@ class AdminTeacherTest extends TestCase
         $this->assertEquals([$newSubject->id], $teacher->subjects()->pluck('subjects.id')->all());
         $user->refresh();
         $this->assertSame('Jeanne Dupont', $user->name);
-        $this->assertSame('94020099', $user->identifiant);
+        $this->assertSame('94020000', $user->identifiant);
     }
 
     public function test_admin_can_update_a_teacher_without_account(): void

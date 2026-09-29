@@ -20,7 +20,6 @@ class RoomFactory extends Factory
     {
         return [
             'name' => fake()->unique()->numerify('Salle ###'),
-            'capacity' => fake()->numberBetween(15, 40),
             'type' => RoomType::Salle,
         ];
     }

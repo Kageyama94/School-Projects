@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\Level;
 use App\Models\Group;
 use App\Models\Licence;
+use App\Models\Teacher;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class AdminGroupController extends Controller
@@ -40,7 +42,17 @@ class AdminGroupController extends Controller
 
     public function update(Request $request, Group $group): RedirectResponse
     {
-        $group->update($this->validated($request, $group));
+        $validated = $this->validated($request, $group);
+
+        DB::transaction(function () use ($group, $validated) {
+            $group->update($validated);
+
+            // Les enseignants qui ont cours dans ce groupe suivent le groupe dans sa nouvelle licence.
+            if ($group->wasChanged('licence_id')) {
+                Teacher::whereHas('lessons', fn ($query) => $query->where('group_id', $group->id))
+                    ->each(fn (Teacher $teacher) => $teacher->licences()->syncWithoutDetaching([$group->licence_id]));
+            }
+        });
 
         return redirect()->route('admin.licences.index')->with('success', 'Groupe mis à jour.');
     }
@@ -61,6 +73,10 @@ class AdminGroupController extends Controller
         return [
             'group' => $group,
             'studentsCount' => $group->exists ? $group->students()->count() : 0,
+            // Enseignants qui y ont cours : ils recevront la nouvelle licence si le groupe change de licence.
+            'teachersCount' => $group->exists
+                ? Teacher::whereHas('lessons', fn ($query) => $query->where('group_id', $group->id))->count()
+                : 0,
             'licences' => Licence::orderBy('name')->get(),
             'levels' => Level::cases(),
         ];

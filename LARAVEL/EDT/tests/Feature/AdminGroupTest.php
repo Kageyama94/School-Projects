@@ -7,6 +7,7 @@ use App\Models\Group;
 use App\Models\Lesson;
 use App\Models\Licence;
 use App\Models\Student;
+use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -169,24 +170,51 @@ class AdminGroupTest extends TestCase
         $this->assertSame(Level::M1, $group->level);
     }
 
+    public function test_teachers_of_a_group_follow_it_into_its_new_licence(): void
+    {
+        $this->actingAsAdmin();
+        $group = Group::factory()->create(['level' => Level::L1, 'name' => 'Groupe A']);
+        $other = Licence::factory()->create();
+        $teacher = Teacher::factory()->create();
+        $teacher->licences()->attach([$group->licence_id, $other->id]);
+        $newcomer = Teacher::factory()->create();
+        $newcomer->licences()->attach($group->licence_id);
+        $bystander = Teacher::factory()->create();
+        Lesson::factory()->create(['group_id' => $group->id, 'teacher_id' => $teacher->id]);
+        Lesson::factory()->create(['group_id' => $group->id, 'teacher_id' => $newcomer->id]);
+
+        $this->put(route('admin.groups.update', $group), [
+            'licence_id' => $other->id,
+            'level' => 'l1',
+            'name' => 'Groupe A',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertEqualsCanonicalizing([$group->licence_id, $other->id], $teacher->licences()->pluck('licences.id')->all());
+        $this->assertEqualsCanonicalizing([$group->licence_id, $other->id], $newcomer->licences()->pluck('licences.id')->all());
+        $this->assertTrue($bystander->licences()->doesntExist());
+    }
+
     public function test_group_form_asks_for_confirmation_before_moving_students_to_another_licence_or_level(): void
     {
         $this->actingAsAdmin();
         $withStudents = Group::factory()->create();
         Student::factory(3)->create(['group_id' => $withStudents->id]);
+        $teacher = Teacher::factory()->create();
+        Lesson::factory(2)->sequence(['day_of_week' => 1], ['day_of_week' => 2])->create(['group_id' => $withStudents->id, 'teacher_id' => $teacher->id]);
         $empty = Group::factory()->create();
 
         $this->get(route('admin.groups.edit', $withStudents))
             ->assertOk()
             ->assertSee('x-on:submit', false)
             ->assertSee('students: 3', false)
+            ->assertSee('teachers: 1', false)
             ->assertSee('étudiant(s) de ce groupe changeront de licence ou de niveau avec lui', false)
-            ->assertSee(e("licence: '{$withStudents->licence_id}'"), false)
-            ->assertSee(e("level: '{$withStudents->level->value}'"), false);
+            ->assertSee('enseignant(s) qui y ont cours recevront aussi la nouvelle licence', false)
+            ->assertSee("licence: '{$withStudents->licence_id}', level: '{$withStudents->level->value}'", false);
 
         // Sans étudiant (ou à la création), le compteur vaut 0 : la confirmation ne se déclenche jamais.
-        $this->get(route('admin.groups.edit', $empty))->assertOk()->assertSee('students: 0', false);
-        $this->get(route('admin.groups.create'))->assertOk()->assertSee('students: 0', false);
+        $this->get(route('admin.groups.edit', $empty))->assertOk()->assertSee('students: 0, teachers: 0', false);
+        $this->get(route('admin.groups.create'))->assertOk()->assertSee('students: 0, teachers: 0', false);
     }
 
     public function test_flash_messages_are_displayed_in_the_layout(): void

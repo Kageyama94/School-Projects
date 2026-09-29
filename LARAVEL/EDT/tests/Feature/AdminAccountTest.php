@@ -43,23 +43,6 @@ class AdminAccountTest extends TestCase
         $this->assertSame('94020001', Student::where('last_name', 'Curie')->firstOrFail()->user->identifiant);
     }
 
-    public function test_identifiant_is_limited_to_8_digits(): void
-    {
-        $this->actingAsAdmin();
-        $user = User::factory()->student()->create(['identifiant' => '94020006']);
-        $student = Student::factory()->create(['user_id' => $user->id]);
-        $payload = ['first_name' => 'Marie', 'last_name' => 'Curie', 'group_id' => $student->group_id];
-
-        $this->put(route('admin.students.update', $student), $payload + ['identifiant' => '99999999999999999999'])
-            ->assertSessionHasErrors('identifiant');
-        $this->put(route('admin.students.update', $student), $payload + ['identifiant' => '123456789'])
-            ->assertSessionHasErrors('identifiant');
-        $this->put(route('admin.students.update', $student), $payload + ['identifiant' => '99999999'])
-            ->assertSessionHasNoErrors();
-
-        $this->assertSame('99999999', $user->fresh()->identifiant);
-    }
-
     public function test_a_very_high_manual_identifiant_does_not_block_the_sequence(): void
     {
         User::factory()->create(['identifiant' => '99999999']);
@@ -111,24 +94,18 @@ class AdminAccountTest extends TestCase
         $this->assertSame(['94020000', '94020001', '94020002'], $identifiants);
     }
 
-    public function test_identifiant_must_be_numeric_and_unique_when_editing_a_profile(): void
+    public function test_identifiant_cannot_be_changed_when_editing_a_profile(): void
     {
         $this->actingAsAdmin();
-        User::factory()->create(['identifiant' => '94020005']);
         $user = User::factory()->student()->create(['identifiant' => '94020006']);
         $student = Student::factory()->create(['user_id' => $user->id]);
-        $payload = [
+
+        $this->put(route('admin.students.update', $student), [
             'first_name' => 'Marie',
             'last_name' => 'Curie',
             'group_id' => $student->group_id,
-        ];
-
-        $this->put(route('admin.students.update', $student), $payload + ['identifiant' => '94020005'])
-            ->assertSessionHasErrors('identifiant');
-        $this->put(route('admin.students.update', $student), $payload + ['identifiant' => 'abc'])
-            ->assertSessionHasErrors('identifiant');
-        $this->put(route('admin.students.update', $student), $payload + ['identifiant' => '94020006'])
-            ->assertSessionHasNoErrors();
+            'identifiant' => '94020099',
+        ])->assertSessionHasNoErrors();
 
         $this->assertSame('94020006', $user->fresh()->identifiant);
     }
@@ -142,9 +119,9 @@ class AdminAccountTest extends TestCase
         $student = Student::factory()->create(['user_id' => $studentUser->id, 'last_name' => 'Curie']);
 
         $this->get(route('admin.teachers.edit', $teacher))
-            ->assertOk()->assertSee('value="Jean"', false)->assertSee('value="94020010"', false);
+            ->assertOk()->assertSee('value="Jean"', false)->assertDontSee('94020010');
         $this->get(route('admin.students.edit', $student))
-            ->assertOk()->assertSee('value="Curie"', false)->assertSee('value="94020011"', false);
+            ->assertOk()->assertSee('value="Curie"', false)->assertDontSee('94020011');
     }
 
     public function test_non_admin_cannot_delete_or_edit_people(): void
@@ -210,7 +187,7 @@ class AdminAccountTest extends TestCase
     public function test_password_reset_closes_the_open_sessions_of_that_user(): void
     {
         $this->actingAsAdmin();
-        $user = User::factory()->student()->create();
+        $user = User::factory()->student()->create(['remember_token' => 'ancien-jeton']);
         Student::factory()->create(['user_id' => $user->id]);
         $other = User::factory()->student()->create();
         foreach ([[$user->id, 'session-a'], [$user->id, 'session-b'], [$other->id, 'session-c']] as [$userId, $id]) {
@@ -221,6 +198,8 @@ class AdminAccountTest extends TestCase
 
         $this->assertDatabaseMissing('sessions', ['user_id' => $user->id]);
         $this->assertDatabaseHas('sessions', ['id' => 'session-c']);
+        // Un appareil mémorisé (« Se souvenir de moi ») ne peut plus se reconnecter seul.
+        $this->assertNotSame('ancien-jeton', $user->refresh()->remember_token);
     }
 
     public function test_password_cannot_be_reset_for_an_account_without_a_teacher_or_student_record(): void
