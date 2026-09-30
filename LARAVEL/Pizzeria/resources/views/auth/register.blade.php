@@ -1,34 +1,21 @@
-@extends('modele')
+@extends('layouts.app')
 
 @section('content')
 
 <h1>Créer un compte</h1>
 
-@if ($errors->any())
-    <div class="alert-error">
-        <ul style="list-style:none">
-            @foreach ($errors->all() as $erreur)
-                <li>{{ $erreur }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
 <div class="form-card">
     <form action="{{ route('register') }}" method="post">
         @csrf
-        <div class="form-row">
-            <label>Identifiant</label>
+        <x-field label="Identifiant">
             <input type="text" name="name" value="{{ old('name') }}">
-        </div>
-        <div class="form-row">
-            <label>Mot de passe</label>
+        </x-field>
+        <x-field label="Mot de passe">
             <input type="password" name="password" minlength="4">
-        </div>
-        <div class="form-row">
-            <label>Confirmer le mot de passe</label>
+        </x-field>
+        <x-field label="Confirmer le mot de passe">
             <input type="password" name="password_confirmation" minlength="4">
-        </div>
+        </x-field>
         <input type="submit" value="S'inscrire">
     </form>
 

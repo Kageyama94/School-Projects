@@ -18,7 +18,7 @@ class ConnexionController extends Controller
 
     public function register() {
         if (Auth::check()) return $this->redirectByRole();
-        return view('connexion/register');
+        return view('auth.register');
     }
 
     public function store(Request $request) {
@@ -38,7 +38,7 @@ class ConnexionController extends Controller
 
     public function login() {
         if (Auth::check()) return $this->redirectByRole();
-        return view('connexion/login');
+        return view('auth.login');
     }
 
     public function authenticate(Request $request) {

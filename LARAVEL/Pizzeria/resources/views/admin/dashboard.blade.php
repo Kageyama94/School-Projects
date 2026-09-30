@@ -1,15 +1,8 @@
-@extends('modele')
+@extends('layouts.app')
 
 @section('content')
 
 <h1>Tableau de bord</h1>
-
-<div class="nav-actions">
-    <form action="{{ route('logout') }}" method="post">
-        @csrf
-        <input type="submit" value="Se déconnecter">
-    </form>
-</div>
 
 <h2>Statistiques</h2>
 <div class="stats">

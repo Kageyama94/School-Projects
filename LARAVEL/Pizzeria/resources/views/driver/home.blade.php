@@ -1,19 +1,8 @@
-@extends('modele')
+@extends('layouts.app')
 
 @section('content')
 
 <h1>Espace livreur</h1>
-
-@if (session('success'))
-    <div class="alert-success">{{ session('success') }}</div>
-@endif
-
-<div class="nav-actions">
-    <form action="{{ route('logout') }}" method="post">
-        @csrf
-        <input type="submit" value="Se déconnecter">
-    </form>
-</div>
 
 <h2>Commandes à livrer</h2>
 

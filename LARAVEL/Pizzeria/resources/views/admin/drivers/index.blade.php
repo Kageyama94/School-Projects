@@ -1,12 +1,8 @@
-@extends('modele')
+@extends('layouts.app')
 
 @section('content')
 
 <h1>Livreurs</h1>
-
-@if (session('success'))
-    <div class="alert-success">{{ session('success') }}</div>
-@endif
 
 <table>
     <tr>
@@ -23,12 +19,10 @@
         <td>{{ $driver->user?->name ?? '—' }}</td>
         <td style="white-space:nowrap">
             <a href="{{ route('admin.driver.edit', $driver->id) }}"><button type="button">Modifier</button></a>
-            <form action="{{ route('admin.driver.destroy', $driver->id) }}" method="post" style="display:inline"
-                  onsubmit="return confirm('Supprimer ' + @js($driver->name) + ' ?')">
-                @csrf
-                @method('DELETE')
-                <input type="submit" value="Supprimer" style="background:#7f8c8d">
-            </form>
+            @include('partials.delete-button', [
+                'action' => route('admin.driver.destroy', $driver->id),
+                'confirm' => 'Supprimer '.$driver->name.' ?',
+            ])
         </td>
     </tr>
     @empty

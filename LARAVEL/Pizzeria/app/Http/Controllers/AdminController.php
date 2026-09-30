@@ -19,7 +19,7 @@ class AdminController extends Controller
             ->groupBy('status')
             ->pluck('total', 'status');
 
-        return view('admin/home', [
+        return view('admin.dashboard', [
             'pizzaCount' => Pizza::count(),
             'orderCount' => $stats->sum(),
             'pendingCount' => ($stats['pending'] ?? 0) + ($stats['preparing'] ?? 0) + ($stats['delivering'] ?? 0),
@@ -29,11 +29,11 @@ class AdminController extends Controller
     }
 
     public function list() {
-        return view('admin/pizza', ['pizzas' => Pizza::orderBy('name')->simplePaginate(10)]);
+        return view('admin.pizzas.index', ['pizzas' => Pizza::orderBy('name')->simplePaginate(10)]);
     }
 
     public function add() {
-        return view('admin/addPizza');
+        return view('admin.pizzas.create');
     }
 
     public function createPizza(Request $request) {
@@ -48,7 +48,7 @@ class AdminController extends Controller
     }
 
     public function edit($id) {
-        return view('admin/editPizza', ['pizza' => Pizza::findOrFail($id)]);
+        return view('admin.pizzas.edit', ['pizza' => Pizza::findOrFail($id)]);
     }
 
     public function update(Request $request, $id) {
@@ -68,16 +68,21 @@ class AdminController extends Controller
     }
 
     public function order(Request $request) {
+        $validated = $request->validate([
+            'driver_id' => 'nullable|exists:drivers,id',
+            'date' => 'nullable|date',
+        ]);
+
         $drivers = Driver::all();
 
         $baseQuery = Order::whereNotNull('order_group_id');
 
-        if ($request->filled('driver_id') && $drivers->contains('id', $request->driver_id)) {
-            $baseQuery->where('driver_id', $request->driver_id);
+        if (!empty($validated['driver_id'])) {
+            $baseQuery->where('driver_id', $validated['driver_id']);
         }
 
-        if ($request->filled('date') && strtotime($request->date)) {
-            $baseQuery->whereDate('created_at', $request->date);
+        if (!empty($validated['date'])) {
+            $baseQuery->whereDate('created_at', $validated['date']);
         }
 
         $activeOrders  = (clone $baseQuery)->whereIn('status', ['pending', 'preparing', 'delivering'])->latest()->get();
@@ -93,7 +98,7 @@ class AdminController extends Controller
 
         $deliveredGroups = Order::groupsForPage($deliveredPage);
 
-        return view('admin/order', compact('pendingGroups', 'activeGroups', 'deliveredGroups', 'deliveredPage', 'drivers'));
+        return view('admin.orders.index', compact('pendingGroups', 'activeGroups', 'deliveredGroups', 'deliveredPage', 'drivers'));
     }
 
     public function acceptOrder($groupId) {
@@ -107,7 +112,7 @@ class AdminController extends Controller
             ->where('order_group_id', $groupId)
             ->get();
         abort_if($orders->isEmpty(), 404);
-        return view('admin/orderDetail', compact('orders', 'groupId'));
+        return view('admin.orders.show', compact('orders', 'groupId'));
     }
 
     public function assignDriver(Request $request, $groupId) {
@@ -130,11 +135,11 @@ class AdminController extends Controller
     }
 
     public function delivery() {
-        return view('admin/delivery_driver', ['drivers' => Driver::with('user')->get()]);
+        return view('admin.drivers.index', ['drivers' => Driver::with('user')->get()]);
     }
 
     public function addDriver() {
-        return view('admin/addDriver');
+        return view('admin.drivers.create');
     }
 
     public function createDriver(Request $request) {
@@ -157,7 +162,7 @@ class AdminController extends Controller
     }
 
     public function editDriver($id) {
-        return view('admin/editDeliveryDriver', ['driver' => Driver::with('user')->findOrFail($id)]);
+        return view('admin.drivers.edit', ['driver' => Driver::with('user')->findOrFail($id)]);
     }
 
     public function updateDriver(Request $request, $id) {

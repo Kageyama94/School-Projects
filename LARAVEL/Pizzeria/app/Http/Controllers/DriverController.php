@@ -8,8 +8,12 @@ use Illuminate\Support\Facades\Auth;
 
 class DriverController extends Controller
 {
+    private function getDriver(): ?Driver {
+        return Driver::where('user_id', Auth::id())->first();
+    }
+
     public function home() {
-        $driver = Driver::where('user_id', Auth::id())->first();
+        $driver = $this->getDriver();
 
         $activeGroups  = collect();
         $historyGroups = collect();
@@ -35,11 +39,12 @@ class DriverController extends Controller
             $historyGroups = Order::groupsForPage($historyPage, ['customers']);
         }
 
-        return view('driver/home', compact('activeGroups', 'historyGroups', 'historyPage'));
+        return view('driver.home', compact('activeGroups', 'historyGroups', 'historyPage'));
     }
 
     public function deliver($groupId) {
-        $driver = Driver::where('user_id', Auth::id())->firstOrFail();
+        $driver = $this->getDriver();
+        abort_if(!$driver, 404);
         $affected = Order::where('order_group_id', $groupId)
                          ->where('driver_id', $driver->id)
                          ->update(['status' => 'delivered', 'delivered_at' => now()]);

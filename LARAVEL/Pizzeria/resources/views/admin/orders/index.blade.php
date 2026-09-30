@@ -1,15 +1,8 @@
-@extends('modele')
+@extends('layouts.app')
 
 @section('content')
 
 <h1>Commandes</h1>
-
-@if (session('success'))
-    <div class="alert-success">{{ session('success') }}</div>
-@endif
-@if ($errors->any())
-    <div class="alert-error">{{ $errors->first() }}</div>
-@endif
 
 <form method="GET" action="{{ route('admin.order.index') }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:20px">
     <select name="driver_id">

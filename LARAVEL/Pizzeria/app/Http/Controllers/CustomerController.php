@@ -35,12 +35,12 @@ class CustomerController extends Controller
             $groups = Order::groupsForPage($groupsPage);
         }
 
-        return view('customer/home', compact('groups', 'groupsPage', 'customer'));
+        return view('customer.home', compact('groups', 'groupsPage', 'customer'));
     }
 
     public function form($userId) {
         $customer = $this->getCustomer();
-        return view('customer/order', [
+        return view('customer.orders.create', [
             'pizzas' => Pizza::orderBy('name')->get(),
             'customer' => $customer,
         ]);
@@ -126,12 +126,12 @@ class CustomerController extends Controller
         abort_if(!$customer, 404);
         $orders = $customer->orders()->where('order_group_id', $groupId)->get();
         abort_if($orders->isEmpty(), 404);
-        return view('customer/orderDetail', compact('orders'));
+        return view('customer.orders.show', compact('orders'));
     }
 
     public function editProfile($userId) {
         $customer = $this->getCustomer();
-        return view('customer/profile', compact('customer'));
+        return view('customer.profile', compact('customer'));
     }
 
     public function updateProfile(Request $request, $userId) {
@@ -152,6 +152,6 @@ class CustomerController extends Controller
         if (!session('summary')) {
             return redirect()->route('customer.home', Auth::id());
         }
-        return view('customer/basket');
+        return view('customer.basket');
     }
 }

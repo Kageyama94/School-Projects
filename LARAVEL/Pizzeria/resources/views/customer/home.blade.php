@@ -1,24 +1,12 @@
-@extends('modele')
+@extends('layouts.app')
 
 @section('content')
 
 <h1>Bienvenue, {{ $customer?->first_name ?? Auth::user()->name }} !</h1>
 
-@if (session('success'))
-    <div class="alert-success">{{ session('success') }}</div>
-@endif
-
-@if ($errors->any())
-    <div class="alert-error">{{ $errors->first() }}</div>
-@endif
-
 <div class="nav-actions">
     <a href="{{ route('order.create', Auth::id()) }}"><button type="button">🍕 Passer une commande</button></a>
     <a href="{{ route('customer.profile.edit', Auth::id()) }}"><button type="button">Mon profil</button></a>
-    <form action="{{ route('logout') }}" method="post">
-        @csrf
-        <input type="submit" value="Se déconnecter">
-    </form>
 </div>
 
 <h2>Historique de mes commandes</h2>

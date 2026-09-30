@@ -12,18 +12,16 @@ Chaque projet est rangé par catégorie / langage dans ce dépôt.
 | HexGame | 2021 | L1 | Janvier – Mai | Java | — | ✅ |
 | Othello | 2022 | L2 | Sep – Déc | Java | P | ✅ |
 | Tron | 2023 | L1 | Janvier – Mai | Java | P | ✅ |
-| EDT / ADE | 2023 | L2 | Janvier – Mai | Laravel | — | 🚧 |
+| EDT / ADE | 2023 | L2 | Janvier – Mai | Laravel | — | ✅ |
 | Pizzeria | 2023 | L2 | Janvier – Mai | Laravel | — | ✅ |
 | Super Mario Bros | 2023 | L2 | Sep – Déc | OCaml | S | ✅ |
 | Mushroom | 2024 | — | Janvier – Mai | Python | — | ✅ |
-| JO | 2024 | L2 | Janvier – Mai | Laravel | I | 🚧 |
+| JO | 2024 | L2 | Janvier – Mai | Laravel | I | ✅ |
 | Chicks | 2024 | L3 | Sep – Déc | Java | P | ✅ |
 | Immo | 2025 | L3 | Janvier – Mai | Python | E | ✅ |
 | APL | 2025 | L3 | Janvier – Mai | Catala | E | ✅ |
 | F1 | 2025 | L3 | Sep – Déc | Java | P / E | ✅ |
 | Wine | 2026 | L3 | Janvier – Mai | Python | — | ✅ |
-
-> ✅ Terminé · 🚧 En cours / non finalisé
 
 ---
 

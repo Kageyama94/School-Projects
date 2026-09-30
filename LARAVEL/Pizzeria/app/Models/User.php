@@ -23,8 +23,4 @@ class User extends Authenticatable
     protected $casts = [
         'password' => 'hashed',
     ];
-
-    public function deliveryDriver() {
-        return $this->hasOne(Driver::class);
-    }
 }
