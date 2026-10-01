@@ -6,11 +6,17 @@ use App\Models\Student;
 use App\Models\Teacher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 abstract class Controller
 {
     protected const PER_PAGE = 10;
+
+    protected function searchTerm(Request $request): string
+    {
+        return $request->string('search')->trim()->toString();
+    }
 
     protected function deleteUnlessInUse(Model $model, bool $inUse, string $route, string $inUseMessage, string $deletedMessage): RedirectResponse
     {

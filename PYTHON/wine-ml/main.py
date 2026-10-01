@@ -328,8 +328,12 @@ def nettoyer(chemin_csv="vins.csv", chemin_sortie="vins_clean.csv"):
     vins = vins.dropna(subset=["Prix"]).reset_index(drop=True)
     print("Prix nettoyé.")
 
+    # Moyennes calculées uniquement sur les lignes d'entraînement (même split que
+    # preparer_donnees : même n_samples + même random_state), pour que le test n'influence
+    # pas l'imputation des notes manquantes.
+    train_idx = _indices_entrainement(len(vins))
     for c in CRITIQUES:
-        moy = moyenne_par_appellation(vins, c)
+        moy = moyenne_par_appellation(vins.iloc[train_idx], c)
         vins = vins.merge(moy, on="Appellation", how="left")
         vins[c] = vins[c].fillna(vins[c + "_moy"]).fillna(0)
         vins = vins.drop(columns=[c + "_moy"])

@@ -30,7 +30,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="py-2 text-gray-400">Aucun étudiant.</td></tr>
+                    <x-empty-row colspan="6">Aucun étudiant.</x-empty-row>
                 @endforelse
             </tbody>
         </table>

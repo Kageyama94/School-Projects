@@ -18,9 +18,7 @@ public class GameController {
         if (delta > 0 && state == Car.State.BOOST) return ChangeSpeedError.ALREADY_BOOSTED;
         if (delta < 0 && state == Car.State.STOPPED) return ChangeSpeedError.ALREADY_STOPPED;
 
-        Car.State next = nextState(state, delta);
-        if (next == null) return null;
-        car.setState(next);
+        car.setState(nextState(state, delta));
         if (delta < 0) car.brake();
         return null;
     }

@@ -11,7 +11,7 @@ public class Walking implements CharacterState {
         int nextX = character.getX() + direction;
         if (isAtBoundary(character, nextX, direction) || isBlockerAhead(character)) reverse(character);
         else if (isFalling(character)) character.setState(new Falling());
-        else if (PhysicsHelper.canJump(character) && character.getX() % cell == 0) character.setState(new Jumping());
+        else if (PhysicsHelper.canJump(character) && PhysicsHelper.isAlignedX(character)) character.setState(new Jumping());
         else if (isCollision(character)) reverse(character);
         else character.setX(character.getX() + direction);
     }

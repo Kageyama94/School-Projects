@@ -65,7 +65,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="empty">Aucun compte ne correspond.</td></tr>
+                <x-empty-row colspan="5">Aucun compte ne correspond.</x-empty-row>
             @endforelse
         </tbody>
     </table>

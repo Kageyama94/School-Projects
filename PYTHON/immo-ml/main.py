@@ -212,6 +212,14 @@ def normaliser(serie):
              .str.replace(r"(franconville).*", "franconville", regex=True)
     )
 
+def evaluer(modele, X_tr, y_tr, X_te, y_te, pre=None):
+    if pre == "norm":
+        modele = make_pipeline(MinMaxScaler(), modele)
+    elif pre == "std":
+        modele = make_pipeline(StandardScaler(), modele)
+    modele.fit(X_tr, y_tr)
+    return modele.score(X_te, y_te), modele.predict(X_te)
+
 def main():
     annonces = pd.read_csv(os.path.join(DATA_DIR, 'annonces.csv'))
     avant = len(annonces)
@@ -261,17 +269,9 @@ def main():
         annonces.loc[X_train.index, col] = X_train[col]
         annonces.loc[X_test.index, col] = X_test[col]
 
-    lr = LinearRegression()
-    lr.fit(X_train, y_train)
-    r2_lr = lr.score(X_test, y_test)
-
-    pipe_lr_norm = make_pipeline(MinMaxScaler(), LinearRegression())
-    pipe_lr_norm.fit(X_train, y_train)
-    r2_lr_norm = pipe_lr_norm.score(X_test, y_test)
-
-    pipe_lr_std = make_pipeline(StandardScaler(), LinearRegression())
-    pipe_lr_std.fit(X_train, y_train)
-    r2_lr_std = pipe_lr_std.score(X_test, y_test)
+    r2_lr, _ = evaluer(LinearRegression(), X_train, y_train, X_test, y_test)
+    r2_lr_norm, _ = evaluer(LinearRegression(), X_train, y_train, X_test, y_test, pre="norm")
+    r2_lr_std, _ = evaluer(LinearRegression(), X_train, y_train, X_test, y_test, pre="std")
 
     # recherche du meilleur max_depth par validation croisée sur le train (le test reste inutilisé jusqu'à l'évaluation finale)
     best_depth = 4
@@ -284,17 +284,9 @@ def main():
             best_depth = depth
     print(f"  \nMeilleur max_depth : {best_depth} (R² CV moyen={best_score_ad:.4f})")
 
-    ad = DecisionTreeRegressor(max_depth=best_depth, random_state=49)
-    ad.fit(X_train, y_train)
-    r2_ad = ad.score(X_test, y_test)
-
-    pipe_ad_norm = make_pipeline(MinMaxScaler(), DecisionTreeRegressor(max_depth=best_depth, random_state=49))
-    pipe_ad_norm.fit(X_train, y_train)
-    r2_ad_norm = pipe_ad_norm.score(X_test, y_test)
-
-    pipe_ad_std = make_pipeline(StandardScaler(), DecisionTreeRegressor(max_depth=best_depth, random_state=49))
-    pipe_ad_std.fit(X_train, y_train)
-    r2_ad_std = pipe_ad_std.score(X_test, y_test)
+    r2_ad, _ = evaluer(DecisionTreeRegressor(max_depth=best_depth, random_state=49), X_train, y_train, X_test, y_test)
+    r2_ad_norm, _ = evaluer(DecisionTreeRegressor(max_depth=best_depth, random_state=49), X_train, y_train, X_test, y_test, pre="norm")
+    r2_ad_std, _ = evaluer(DecisionTreeRegressor(max_depth=best_depth, random_state=49), X_train, y_train, X_test, y_test, pre="std")
 
     # recherche du meilleur n_neighbors par validation croisée sur le train (le test reste inutilisé jusqu'à l'évaluation finale)
     best_k = 4
@@ -307,17 +299,9 @@ def main():
             best_k = k
     print(f"  \nMeilleur k : {best_k} (R² CV moyen={best_score_knn:.4f})")
 
-    knn = KNeighborsRegressor(n_neighbors=best_k)
-    knn.fit(X_train, y_train)
-    r2_knn = knn.score(X_test, y_test)
-
-    pipe_knn_norm = make_pipeline(MinMaxScaler(), KNeighborsRegressor(n_neighbors=best_k))
-    pipe_knn_norm.fit(X_train, y_train)
-    r2_knn_norm = pipe_knn_norm.score(X_test, y_test)
-
-    pipe_knn_std = make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=best_k))
-    pipe_knn_std.fit(X_train, y_train)
-    r2_knn_std = pipe_knn_std.score(X_test, y_test)
+    r2_knn, _ = evaluer(KNeighborsRegressor(n_neighbors=best_k), X_train, y_train, X_test, y_test)
+    r2_knn_norm, _ = evaluer(KNeighborsRegressor(n_neighbors=best_k), X_train, y_train, X_test, y_test, pre="norm")
+    r2_knn_std, predictions = evaluer(KNeighborsRegressor(n_neighbors=best_k), X_train, y_train, X_test, y_test, pre="std")
 
     best_lr = max(r2_lr, r2_lr_norm, r2_lr_std)
     best_ad = max(r2_ad, r2_ad_norm, r2_ad_std)
@@ -337,7 +321,6 @@ def main():
     print(f"  \nTableau récapitulatif (AD: max_depth={best_depth}, KNN: k={best_k}) :")
     print(resultats)
 
-    predictions = pipe_knn_std.predict(X_test)
     plt.figure(figsize=(8, 6))
     plt.scatter(y_test, predictions, alpha=0.6, label="Estimations")
     plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2, label="Diagonale")

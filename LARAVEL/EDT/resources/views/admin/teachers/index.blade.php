@@ -35,7 +35,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="py-2 text-gray-400">Aucun enseignant.</td></tr>
+                    <x-empty-row colspan="6">Aucun enseignant.</x-empty-row>
                 @endforelse
             </tbody>
         </table>
@@ -68,7 +68,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="3" class="py-2 text-gray-400">Aucune matière.</td></tr>
+                    <x-empty-row colspan="3">Aucune matière.</x-empty-row>
                 @endforelse
             </tbody>
         </table>

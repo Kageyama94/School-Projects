@@ -112,19 +112,18 @@ Sur le catalogue complet (2 934 fiches, prix de 6,50 € à 36 600 €) :
 
 | Modèle | r² |
 |---|---|
-| Régression Linéaire (LR) | 0.278 |
-| Normalisation + LR | 0.278 |
-| Standardisation + LR | 0.258 |
-| Arbre de Décision (AD) | 0.281 |
-| K plus proches voisins (KNN, normalisé, k=9) | 0.322 |
-| **Forêt Aléatoire (RF)** | **0.330** |
+| Régression Linéaire (LR) | 0.276 |
+| Normalisation + LR | 0.276 |
+| Standardisation + LR | 0.256 |
+| Arbre de Décision (AD) | 0.289 |
+| K plus proches voisins (KNN, standardisé, k=10) | 0.317 |
+| **Forêt Aléatoire (RF)** | **0.332** |
 
-La Forêt Aléatoire est le meilleur modèle, de justesse devant le KNN une fois k optimisé par CV
-(k=9 contre k=4 testé initialement, +0.04 de r²). La réduire à une PCA (5 composantes, 98,85 % de
-variance expliquée) ou aux 5 attributs les plus corrélés au prix (`Robert`, `Robinson`,
-`App_Pauillac`, `Suckling`, `App_Haut-Médoc`) donne des r² proches (0.311 et 0.301) : l'essentiel
-du signal vient des notes de critiques et de quelques appellations phares, pas de l'encodage
-complet des appellations.
+La Forêt Aléatoire est le meilleur modèle, de justesse devant le KNN une fois k optimisé par CV.
+La réduire à une PCA (5 composantes, 98,85 % de variance expliquée) ou aux 5 attributs les plus
+corrélés au prix (`Robert`, `Robinson`, `App_Pauillac`, `Suckling`, `App_Haut-Médoc`) donne des r²
+proches (0.302 et 0.292) : l'essentiel du signal vient des notes de critiques et de quelques
+appellations phares, pas de l'encodage complet des appellations.
 
 Les figures ci-dessous montrent les estimations vs prix réels pour la régression linéaire.
 La dispersion autour de la diagonale illustre que le prix dépend de facteurs non capturés

@@ -22,7 +22,7 @@ class AdminTeacherController extends Controller
 {
     public function index(Request $request): View
     {
-        $search = $request->string('search')->trim()->toString();
+        $search = $this->searchTerm($request);
 
         return view('admin.teachers.index', [
             'teachers' => Teacher::with(['user', 'subjects', 'licences'])->withCount('lessons')

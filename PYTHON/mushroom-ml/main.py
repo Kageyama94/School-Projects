@@ -78,11 +78,14 @@ def _champ(soup, label):
 def color(soup):
     return '-'.join(_champ(soup, 'Color:'))
 
+def _champ_normalise(soup, label):
+    return '-'.join(v.replace(' ', '').replace('-', '') for v in _champ(soup, label))
+
 def shape(soup):
-    return '-'.join(v.replace(' ', '').replace('-', '') for v in _champ(soup, 'Shape:'))
+    return _champ_normalise(soup, 'Shape:')
 
 def surface(soup):
-    return '-'.join(v.replace(' ', '').replace('-', '') for v in _champ(soup, 'Surface:'))
+    return _champ_normalise(soup, 'Surface:')
 
 def csv_info(url):
     response = fetch(url)

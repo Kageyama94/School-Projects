@@ -23,7 +23,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="py-2 text-gray-400">Aucune salle.</td></tr>
+                    <x-empty-row colspan="4">Aucune salle.</x-empty-row>
                 @endforelse
             </tbody>
         </table>

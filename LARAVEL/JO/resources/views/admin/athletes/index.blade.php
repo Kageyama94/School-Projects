@@ -56,7 +56,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="empty">Aucun athlète ne correspond.</td></tr>
+                <x-empty-row colspan="5">Aucun athlète ne correspond.</x-empty-row>
             @endforelse
         </tbody>
     </table>

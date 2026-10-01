@@ -44,7 +44,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="py-2 text-gray-400">Aucun groupe dans cette licence.</td></tr>
+                        <x-empty-row colspan="5">Aucun groupe dans cette licence.</x-empty-row>
                     @endforelse
                 </tbody>
             </table>

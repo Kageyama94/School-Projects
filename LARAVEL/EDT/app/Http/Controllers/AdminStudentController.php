@@ -19,7 +19,7 @@ class AdminStudentController extends Controller
 {
     public function index(Request $request): View
     {
-        $search = $request->string('search')->trim()->toString();
+        $search = $this->searchTerm($request);
 
         return view('admin.students.index', [
             'students' => Student::with(['user', 'group.licence'])
