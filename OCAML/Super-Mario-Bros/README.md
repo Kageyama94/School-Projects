@@ -6,6 +6,8 @@ Le personnage traverse un niveau généré aléatoirement (sol troué, obstacles
 
 ## Aperçu
 
+<img src="screenshots/gameplay.png" alt="Gameplay" width="800">
+
 - Personnage et décor dessinés en art ASCII (`{*}` / `/O\` / `/ \` pour le héros)
 - Défilement horizontal avec caméra qui suit le joueur
 - Niveau **différent à chaque partie** (trous, obstacles et pièces générés aléatoirement)
@@ -64,6 +66,7 @@ dune exec ./mario.exe
 ├── keyboard_stubs.c    # stub C pour la lecture clavier (API Windows)
 ├── dune                # configuration de build
 ├── dune-project        # déclaration du projet dune
+├── screenshots/        # captures d'écran
 └── README.md
 ```
 
