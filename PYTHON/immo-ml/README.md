@@ -23,7 +23,7 @@ immo-ml/
 
 ## Prérequis
 
-- Python 3.10+
+- Python 3.11+ (testé avec 3.14)
 
 Installation des dépendances :
 
@@ -77,9 +77,9 @@ Le scraping cible les annonces de vente d'Île-de-France. Pour chaque fiche, on 
 ### Partie 2 — Nettoyage des données
 
 - Suppression des doublons
-- Filtrage des valeurs aberrantes (surface < 10 m², plus de 10 pièces)
+- Filtrage des valeurs aberrantes : surface < 10 m², plus de 10 pièces, ou prix au m² hors de la fourchette plausible en Île-de-France (1 000 à 20 000 €/m², au moins 5 000 €/m² à Paris), qui écarte viagers, parkings et erreurs de saisie
 - Encodage one-hot des colonnes `Type` et `DPE` (`drop_first=True`)
-- Enrichissement géographique : jointure avec `cities.csv` pour ajouter latitude / longitude, après normalisation des noms de communes (accents, casse, variantes)
+- Enrichissement géographique : jointure avec `cities.csv` pour ajouter latitude / longitude, après normalisation des noms de communes (accents, casse, variantes, communes renommées comme Herblay → Herblay-sur-Seine). Le référentiel n'ayant ni coordonnées « centre » pour Paris ni lignes par arrondissement, toutes les annonces parisiennes reçoivent les coordonnées de la mairie de Paris
 
 ### Partie 3 — Apprentissage
 
@@ -106,6 +106,29 @@ Analyses complémentaires :
 
 ## Résultats
 
-La figure `predictions_knn.png` montre les estimations vs prix réels pour le KNN standardisé.
+**Données.** 578 annonces scrapées (367 appartements, 211 maisons, 269 communes, prix médian 240 000 €) :
 
-La dispersion autour de la diagonale illustre que le prix dépend de facteurs non capturés par les seules caractéristiques disponibles (état du bien, étage, prestations, négociation, etc.). Le nombre de pièces et la surface ressortent comme les attributs les plus corrélés au prix, suivis du nombre de chambres.
+| Étape | Annonces restantes |
+|---|:-:|
+| Scraping | 578 |
+| Suppression des doublons | 560 |
+| Filtrage des valeurs aberrantes (dont 50 des 106 annonces parisiennes, 45 d'entre elles sous 5 000 €/m²) | 490 |
+| Rattachement géographique | **490** |
+
+Le DPE est absent de deux annonces sur trois (387 sur 578).
+
+**Modèles (r² sur le jeu de test).** Hyperparamètres choisis par validation croisée : `max_depth=6` pour l'arbre, `k=4` pour le KNN.
+
+| Modèle | Brut | Normalisation | Standardisation |
+|---|:-:|:-:|:-:|
+| Régression Linéaire (LR) | 0.120 | 0.120 | 0.120 |
+| **Arbre de Décision (AD)** | **0.261** | **0.261** | **0.261** |
+| KNN | -0.015 | 0.063 | 0.150 |
+
+**Analyses complémentaires.**
+- PCA à 2 composantes : le r² du KNN standardisé passe de 0.150 à -0.025.
+- Attributs les plus corrélés au prix : `Surface` (0.48), `NbrPieces` (0.42), `NbrChambres` (0.35), `DPE_D` (0.24), `DPE_Vierge` (0.17). Un KNN standardisé restreint à ces 5 attributs obtient un r² de 0.125.
+
+L'arbre de décision est le meilleur modèle sur ce découpage : en coupant sur la latitude et la longitude, il isole les annonces parisiennes, toutes placées au même point et nettement plus chères, ce que la régression linéaire ne sait pas faire. Ces scores restent toutefois fragiles. Avec moins de 500 annonces, ils varient fortement d'un découpage train/test à l'autre : sur 50 découpages aléatoires, le r² médian est de 0.19 pour la LR, 0.14 pour l'AD et 0.20 pour le KNN standardisé, sans modèle nettement supérieur aux autres.
+
+Les modèles n'expliquent donc qu'environ 20 % de la variance du prix. La figure `predictions_knn.png` (estimations vs prix réels pour le KNN standardisé) montre une forte dispersion autour de la diagonale : le prix dépend de facteurs absents des annonces (état du bien, étage, prestations, quartier, négociation). Le faible volume de données, le DPE souvent manquant et une localisation réduite aux coordonnées du centre de la commune (un seul point pour tout Paris) limitent aussi les performances.

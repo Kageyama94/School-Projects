@@ -47,6 +47,7 @@ class DriverController extends Controller
         abort_if(!$driver, 404);
         $affected = Order::where('order_group_id', $groupId)
                          ->where('driver_id', $driver->id)
+                         ->where('status', 'delivering') // une commande déjà livrée garde sa date de livraison
                          ->update(['status' => 'delivered', 'delivered_at' => now()]);
         abort_if($affected === 0, 404);
         return back()->with('success', 'Commande marquée comme livrée.');

@@ -6,7 +6,7 @@
 
 ## Présentation
 
-**ChickApp** est un jeu de réflexion inspiré de *Lemmings*, développé en Java avec Swing.  
+**Chicks** est un jeu de réflexion inspiré de *Lemmings*, développé en Java avec Swing.  
 Des poussins apparaissent un par un depuis un portail d'entrée et marchent tout droit, sans se soucier du danger. Votre rôle : leur assigner des tâches pour les guider jusqu'au portail de sortie, en évitant la lave et les chutes mortelles.
 
 <p align="center">
@@ -24,22 +24,27 @@ Des poussins apparaissent un par un depuis un portail d'entrée et marchent tout
 ```
 
 - **100 poussins** apparaissent progressivement (1 par seconde)
+- Ils montent seuls les marches d'**une case** et font demi-tour devant un mur, un bloqueur ou le bord de l'écran
 - Chaque poussin qui tombe de **5 cases ou plus** meurt
-- La partie se termine quand tous les poussins ont disparu ou atteint la sortie
+- La **lave** (en rouge, en bas du niveau) tue instantanément et ne peut pas être détruite
+- La partie se termine une fois les 100 poussins apparus et plus aucun à l'écran (sortis ou morts)
+- Un compteur en haut à gauche affiche le total, les poussins visibles, sortis et morts
 
 ---
 
 ## Tâches disponibles
 
-| Tâche | Rôle |
-|---|---|
-| 🧱 **Bloqueur** | Devient un obstacle fixe, fait demi-tour aux autres |
-| ⛏️ **Foreur** | Creuse vers le bas (5 cases) |
-| 🔨 **Charpentier** | Construit un escalier de 5 marches vers l'avant |
-| 🪖 **Tunnelier** | Perce un tunnel dans le mur devant lui |
-| 🧗 **Grimpeur** | Escalade les murs au lieu de faire demi-tour |
-| 🪂 **Parachutiste** | Ralentit la chute, survit aux grandes hauteurs |
-| 💣 **Bombeur** | Explose après 3 pas, détruit les obstacles alentour (et meurt) |
+| Tâche | Couleur | Rôle |
+|---|---|---|
+| 🧱 **Bloqueur** | Bleu nuit | Se fige en obstacle fixe qui fait faire demi-tour aux autres (le poussin est sacrifié et compté parmi les morts) |
+| ⛏️ **Foreur** | Rose | Creuse vers le bas sur 5 cases |
+| 🔨 **Charpentier** | Marron | Construit un escalier de 5 marches vers l'avant (s'arrête devant un obstacle, au bord de l'écran ou s'il fait demi-tour) |
+| 🪖 **Tunnelier** | Gris | Perce le mur devant lui jusqu'à en ressortir |
+| 🧗 **Grimpeur** | Magenta | Escalade le prochain mur au lieu de faire demi-tour, puis reprend sa marche au sommet |
+| 🪂 **Parachutiste** | Cyan | Ralentit sa chute et survit à n'importe quelle hauteur |
+| 💣 **Bombeur** | Orange | Explose après 3 cases, détruit les obstacles dans un rayon de 2 cases (sauf la lave) et meurt |
+
+Un poussin sans tâche est **jaune**. Un poussin ne peut recevoir une nouvelle tâche qu'une fois la précédente terminée.
 
 ---
 
@@ -118,7 +123,7 @@ java -cp out app.Main
 | Action | Effet |
 |---|---|
 | **Clic droit** sur le plateau | Ouvrir le menu de sélection de tâche |
-| **Clic gauche** sur un poussin | Appliquer la tâche sélectionnée |
+| **Clic gauche** sur un poussin | Appliquer la tâche sélectionnée (elle reste sélectionnée pour les clics suivants) |
 | Survol de la grille | Affiche le curseur de cellule |
 
 ---
@@ -127,5 +132,5 @@ java -cp out app.Main
 
 | Résultat | Condition |
 |---|---|
-| ✅ **Victoire** | Au moins 1 poussin atteint le portail de sortie |
-| ❌ **Défaite** | Aucun poussin n'atteint la sortie |
+| ✅ **Victoire** | Au moins 1 poussin atteint le portail de sortie (« Bravo ! Les poussins ont été sauvés ! ») |
+| ❌ **Défaite** | Aucun poussin n'atteint la sortie (« Game Over, aucun poussin n'a été sauvé ! ») |

@@ -21,6 +21,12 @@ from concurrent.futures import ThreadPoolExecutor
 base_url = "https://www.immo-entre-particuliers.com"
 REQUEST_DELAY = 0.3  # pause après chaque requête réussie pour ne pas se faire bannir
 
+# Fourchette de prix au m² plausible en Île-de-France : en dehors, l'annonce est un viager,
+# un parking, une erreur de saisie... Plancher plus élevé pour Paris.
+PRIX_M2_MIN = 1000
+PRIX_M2_MIN_PARIS = 5000
+PRIX_M2_MAX = 20000
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                   "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
@@ -210,6 +216,9 @@ def normaliser(serie):
              .str.replace(r"(evry).*", "evry", regex=True)
              .str.replace(r"(perigny).*", "perigny", regex=True)
              .str.replace(r"(franconville).*", "franconville", regex=True)
+             # communes renommées en 2019, encore saisies sous leur ancien nom
+             .str.replace(r"^herblay$", "herblaysurseine", regex=True)
+             .str.replace(r"^mereville$", "lemerevillois", regex=True)
     )
 
 def evaluer(modele, X_tr, y_tr, X_te, y_te, pre=None):
@@ -231,7 +240,10 @@ def main():
         annonces[col] = pd.to_numeric(annonces[col].replace('-', pd.NA), errors='coerce')
 
     # Filtrage des valeurs aberrantes
-    aberrantes = annonces[ (annonces['Surface'] < 10) | (annonces['NbrPieces'] > 10) ]
+    prix_m2 = annonces['Prix'] / annonces['Surface']
+    prix_m2_min = np.where(annonces['Ville'].str.match(r"Paris\b"), PRIX_M2_MIN_PARIS, PRIX_M2_MIN)
+    aberrantes = annonces[ (annonces['Surface'] < 10) | (annonces['NbrPieces'] > 10)
+                           | (prix_m2 < prix_m2_min) | (prix_m2 > PRIX_M2_MAX) ]
     print(f"  \n{len(aberrantes)} annonces aberrantes supprimées :")
     print(aberrantes[['Ville', 'Type', 'Surface', 'NbrPieces', 'NbrChambres', 'NbrSdb', 'Prix']].to_string())
     annonces = annonces.drop(aberrantes.index)
@@ -242,6 +254,10 @@ def main():
     villes = pd.read_csv(os.path.join(DATA_DIR, 'cities.csv'), low_memory=False)
 
     villes = villes[villes["reg_nom"].str.lower() == "île-de-france"].copy()
+    # Paris n'a pas de coordonnées "centre" dans le référentiel (ni de lignes par arrondissement) :
+    # on se rabat sur celles de la mairie, toutes les annonces parisiennes partagent donc ce point
+    villes['latitude_centre'] = villes['latitude_centre'].fillna(villes['latitude_mairie'])
+    villes['longitude_centre'] = villes['longitude_centre'].fillna(villes['longitude_mairie'])
     annonces['Ville'] = normaliser(annonces['Ville'])
     villes['nom_standard'] = normaliser(villes['nom_standard'])
 
@@ -344,7 +360,8 @@ def main():
     knn_pca = KNeighborsRegressor(n_neighbors=best_k)
     knn_pca.fit(X_train_pca, y_train)
     r2_knn_pca = knn_pca.score(X_test_pca, y_test)
-    print(f"\nScore R² de KNN avant PCA : {r2_knn:.4f}")
+    # la PCA travaille sur des données standardisées : la référence est donc le KNN standardisé
+    print(f"\nScore R² de KNN standardisé avant PCA : {r2_knn_std:.4f}")
     print(f"Score R² de KNN après PCA (2 composantes) : {r2_knn_pca:.4f}")
 
     # Matrice de corrélation, calculée sur le train uniquement (le test ne doit pas influencer
@@ -376,10 +393,11 @@ def main():
     X_top5 = annonces[top5_features]
     X_train_top5, X_test_top5 = X_top5.loc[X_train.index], X_top5.loc[X_test.index]
 
-    knn_top5 = KNeighborsRegressor(n_neighbors=best_k)
+    # standardisé, comme le KNN de référence (sinon la surface écrase les autres attributs dans les distances)
+    knn_top5 = make_pipeline(StandardScaler(), KNeighborsRegressor(n_neighbors=best_k))
     knn_top5.fit(X_train_top5, y_train)
     r2_knn_top5 = knn_top5.score(X_test_top5, y_test)
-    print(f"\nR² KNN avec les 5 attributs les plus corrélés : {r2_knn_top5:.4f}\n")
+    print(f"\nR² KNN standardisé avec les 5 attributs les plus corrélés : {r2_knn_top5:.4f}\n")
 
 if __name__ == "__main__":
     scrape("https://www.immo-entre-particuliers.com/annonces/france-ile-de-france/vente/ta-offer")

@@ -25,7 +25,7 @@ wine-ml/
 
 ## Prérequis
 
-- Python 3.10+
+- Python 3.11+ (testé avec 3.14)
 - Google Chrome installé
 - ChromeDriver correspondant à votre version de Chrome ([téléchargement](https://chromedriver.chromium.org/downloads))
 
@@ -81,7 +81,9 @@ Pour chaque fiche produit, on extrait :
 - Complétion des notes manquantes par la moyenne de l'appellation (ou 0 si aucune note disponible)
 - Encodage one-hot de la colonne `Appellation` (`App_Pauillac`, `App_Margaux`, etc.)
 
-Le DataFrame final contient ~2 000–3 000 lignes entièrement numériques.
+Les notes sont souvent absentes du site : Parker figure sur 69 % des fiches, Robinson sur 61 %, Suckling sur 77 %, et 236 vins n'ont aucune note.
+
+Le DataFrame final contient 2 934 lignes et 32 colonnes entièrement numériques (prix, 3 notes, 28 appellations encodées).
 
 ### Partie 3 — Apprentissage
 
@@ -108,7 +110,7 @@ Analyses complémentaires :
 
 ## Résultats
 
-Sur le catalogue complet (2 934 fiches, prix de 6,50 € à 36 600 €) :
+Sur le catalogue complet (2 934 fiches, 28 appellations, prix de 6,50 € à 36 600 €, médiane 64 €) :
 
 | Modèle | r² |
 |---|---|

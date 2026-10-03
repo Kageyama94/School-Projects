@@ -176,7 +176,9 @@ class AdminController extends Controller
     public function destroyDriver($id) {
         $driver = Driver::findOrFail($id);
         $userId = $driver->user_id;
-        Order::where('driver_id', $driver->id)->where('status', 'delivering')->update(['status' => 'preparing']);
+        // Les commandes livrées gardent le nom du livreur (historique) ; celles en cours de livraison
+        // repassent en préparation sans livreur.
+        Order::where('driver_id', $driver->id)->where('status', 'delivering')->update(['status' => 'preparing', 'driver_name' => null]);
         // La FK orders.driver_id est ON DELETE SET NULL (voir migration), pas besoin de la nullifier ici.
         $driver->delete();
         if ($userId) {

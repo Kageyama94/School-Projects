@@ -14,7 +14,7 @@ import view.GameView;
 public class Main {
     public static void main(String[] args){
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("ChickApp");
+            JFrame frame = new JFrame("Chicks");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setBackground(new Color(135, 206, 250));
 

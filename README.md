@@ -34,7 +34,9 @@ School-Projects/
 ├── PYTHON/       # Projets Machine Learning (Mushroom, Immo, Wine)
 ├── CATALA/       # Projet APL
 ├── LARAVEL/      # Applications web (EDT, Pizzeria, JO)
+├── .github/      # CI GitHub Actions (tests Catala du projet APL)
 ├── .gitattributes
+├── .gitignore
 └── README.md
 ```
 
@@ -66,13 +68,13 @@ School-Projects/
 
 ## ⚖️ Catala
 
-- **APL** (2025) — Projet dédié à la modélisation de règles juridiques / fiscales.
+- **APL** (2025) — Calcul de l'Aide Personnalisée au Logement (montant forfaitaire des charges, plafond de loyer) d'après l'arrêté du 27 septembre 2019.
 
 ---
 
 ## 🛠️ Technologies
 
-`Java` · `Python` · `OCaml` · `Catala` · `Laravel (PHP)` · `scikit-learn` · `Selenium` · `BeautifulSoup`
+`Java (Swing)` · `Python` · `OCaml` · `Catala` · `Laravel (PHP)` · `scikit-learn` · `pandas` · `Flask` · `Selenium` · `BeautifulSoup`
 
 ---
 
